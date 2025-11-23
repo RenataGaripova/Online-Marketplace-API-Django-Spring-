@@ -1,62 +1,61 @@
 # Python modules + Third party modules
 
 # Django modules
-from django.db import models
+from django.db.models import (
+    CharField,
+    TextField,
+    QuerySet,
+    CASCADE,
+    SET_DEFAULT,
+    ForeignKey,
+    IntegerField,
+    DecimalField,
+    PositiveSmallIntegerField,
+    PositiveIntegerField,
+)
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-from django.db.models import CheckConstraint, Q
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 # Project modules
 from apps.products.models import Product
+from apps.abstracts.models import AbstractBaseModel
 
 
-REQUIRES_DELIVERY_CHOICES = [
-    ('required', 'Courier delivery required'),
-    ('not_required', 'Pickup'),
-]
-
-
-STATUS_CHOICES = [
-    ('P', 'Processing'),
-    ('S', 'Shipped'),
-    ('D', 'Delivered'),
-]
-
-
-class CartItemQuerySet(models.QuerySet):
+class CartItemQuerySet(QuerySet):
     """Cart Item QuerySet."""
 
-    def cart_total_price(self):
+    def cart_total_price(self) -> float:
         """Get total price of user's cart items."""
         if self:
             return sum(cart_item.get_products_price() for cart_item in self)
-        return 0
+        return 0.0
 
-    def cart_total_quantity(self):
+    def cart_total_quantity(self) -> float:
         """Get total quantity of items in the user's cart."""
         if self:
             return sum(cart_item.quantity for cart_item in self)
-        return 0
+        return 0.0
 
 
-class CartItem(models.Model):
+class CartItem(AbstractBaseModel):
     """
-    ProjCart item database (table) model.
+    Cart item database (table) model.
     """
 
-    user = models.ForeignKey(
+    user = ForeignKey(
         to=get_user_model(),
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         blank=True,
         null=True,
+        verbose_name="User",
     )
-    product = models.ForeignKey(
+    product = ForeignKey(
         to=Product,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
+        verbose_name="Related product"
     )
-    quantity = models.PositiveSmallIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    quantity = PositiveSmallIntegerField(default=0, verbose_name="Quantity")
 
     objects = CartItemQuerySet().as_manager()
 
@@ -65,128 +64,138 @@ class CartItem(models.Model):
 
         ordering = ("-created_at",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Magic method."""
         return f"{self.user.username}'s cart"
 
-    def get_products_price(self):
+    def get_products_price(self) -> float:
         """Get the subtotal of a cart."""
         return round(self.product.price * self.quantity, 2)
 
 
-class Order(models.Model):
+class Order(AbstractBaseModel):
     """
     Order item database (table) model.
     """
+    MAX_PHONE_NUMBER_LENGTH = 20
+    MAX_STATUS_LENGTH = 20
+    MAX_ADDRESS_LENGTH = 1024
+    STATUS_CHOICES = [
+        ('P', 'Processing'),
+        ('S', 'Shipped'),
+        ('D', 'Delivered'),
+    ]
 
-    user = models.ForeignKey(
+    user = ForeignKey(
         to=get_user_model(),
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         blank=True,
         null=True,
+        verbose_name="User",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    phone_number = models.CharField(
-        max_length=20,
+    phone_number = CharField(
+        max_length=MAX_PHONE_NUMBER_LENGTH,
         validators=[
             RegexValidator(
                 regex=r'^\+?1?\d{9,15}$',
                 message="Phone number must be entered in the format: "
                 "'+999999999'. Up to 15 digits allowed."
             )
-        ]
+        ],
+        verbose_name="Phone number"
     )
-    delivery_city = models.CharField(max_length=64)
-    delivery_pickup_point = models.CharField(max_length=512)
-    delivery_personal_address = models.CharField(
-        max_length=512,
-        null=True,
-        blank=True
+    delivery_address = CharField(
+        max_length=MAX_ADDRESS_LENGTH,
+        verbose_name="Delivery address"
     )
-    requires_couriers_delivery = models.CharField(
-        max_length=32,
-        choices=REQUIRES_DELIVERY_CHOICES,
-        default='not_required',
-    )
-    status = models.CharField(
-        max_length=20,
+    status = CharField(
+        max_length=MAX_STATUS_LENGTH,
         choices=STATUS_CHOICES,
-        default='P'
+        default='P',
+        verbose_name="Order's status",
     )
 
     class Meta:
         """Meta class."""
 
         ordering = ("-created_at",)
-        # In case user chose a courier delivery, but did not provide an address
-        constraints = [
-            CheckConstraint(
-                check=(
-                    Q(requires_couriers_delivery='not_required') |
-                    Q(
-                        delivery_personal_address__isnull=False,
-                        delivery_personal_address__gte=""
-                    )
-                ),
-                name="requires_delivery_adress_is_not_null"
-            )
-        ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Magic str method."""
         return (f"Order № {self.pk}"
                 f" User: {self.user.username}")
 
 
-class OrderItem(models.Model):
+class OrderItem(AbstractBaseModel):
     """
     Order item database (table) model.
     """
 
-    order = models.ForeignKey(
+    MAX_ORDER_ITEM_NAME_LENGTH = 256
+    MAX_PRICE_DIGITS = 10
+    MAX_DECIMAL_PLACES = 2
+
+    order = ForeignKey(
         to=Order,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
+        verbose_name="Order",
     )
-    product = models.ForeignKey(
+    product = ForeignKey(
         to=Product,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
+        verbose_name="Related product",
     )
-    name = models.CharField(max_length=256)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    quantity = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    name = CharField(
+        max_length=MAX_ORDER_ITEM_NAME_LENGTH,
+        verbose_name="Products name",
+    )
+    price = DecimalField(
+        max_digits=MAX_PRICE_DIGITS,
+        decimal_places=MAX_DECIMAL_PLACES,
+        verbose_name="Price",
+    )
+    quantity = PositiveIntegerField(
+        default=0,
+        verbose_name="Ordered quantity",
+    )
 
     class Meta:
         """Meta class."""
 
         ordering = ("-created_at",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Magic str method."""
-        return f'Order Item from order: {self.order.id}'
+        return f"Order Item from order: {self.order.id}"
 
 
-class Review(models.Model):
+class Review(AbstractBaseModel):
     """
     Review database (table) model.
     """
+    MIN_RATE = 0
+    MAX_RATE = 5
 
-    product = models.ForeignKey(
+    product = ForeignKey(
         to=Product,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
+        verbose_name="Related product",
     )
-    author = models.ForeignKey(
+    author = ForeignKey(
         to=get_user_model(),
-        on_delete=models.SET_DEFAULT,
-        default="Deleted Accounts"
+        on_delete=SET_DEFAULT,
+        default="Deleted Accounts",
+        verbose_name="Author",
     )
-    rate = models.IntegerField(
-        validators=(MinValueValidator(0), MaxValueValidator(5)),
-        verbose_name='Rating',
+    rate = IntegerField(
+        validators=(
+            MinValueValidator(MIN_RATE),
+            MaxValueValidator(MAX_RATE)
+        ),
         default=0,
+        verbose_name='Rating',
     )
-    text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    text = TextField(verbose_name="Reviews's text")
 
     class Meta:
         """Meta class."""
@@ -194,6 +203,6 @@ class Review(models.Model):
         default_related_name = 'reviews'
         ordering = ('-created_at',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Magic str method."""
         return f'Comment from author {self.author.username}'

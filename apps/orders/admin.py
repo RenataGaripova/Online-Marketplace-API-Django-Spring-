@@ -17,9 +17,12 @@ class CartItemAdmin(admin.ModelAdmin):
         "product",
         "quantity",
         "created_at",
+        "updated_at",
+        "deleted_at",
     )
     search_fields = ("user__email", "product__name")
     list_filter = ("quantity",)
+    ordering = ("-created_at",)
     fieldsets = [
         (
             "Cart Information",
@@ -30,7 +33,7 @@ class CartItemAdmin(admin.ModelAdmin):
         (
             "Date-Time Information",
             {
-                "fields": ["created_at"],
+                "fields": ["created_at", "updated_at", "deleted_at",],
             },
         ),
     ]
@@ -51,9 +54,12 @@ class OrderItemAdmin(admin.ModelAdmin):
         "price",
         "quantity",
         "created_at",
+        "updated_at",
+        "deleted_at",
     )
     search_fields = ("order", "product", "name")
     list_filter = ("quantity", "price")
+    ordering = ("-created_at",)
     fieldsets = [
         (
             "Order Information",
@@ -70,7 +76,7 @@ class OrderItemAdmin(admin.ModelAdmin):
         (
             "Date-Time Information",
             {
-                "fields": ["created_at"],
+                "fields": ["created_at", "updated_at", "deleted_at",],
             },
         ),
     ]
@@ -87,23 +93,21 @@ class Order(admin.ModelAdmin):
         "id",
         "user",
         "phone_number",
-        "delivery_city",
-        "delivery_pickup_point",
-        "delivery_personal_address",
-        "requires_couriers_delivery",
+        "delivery_address",
         "status",
-        "created_at"
+        "created_at",
+        "updated_at",
+        "deleted_at",
     )
     search_fields = (
         "user__email",
         "product__name",
         "user__phone",
-        "delivery_city",
-        "delivery_personal_address",
-        "delivery_pickup_point",
+        "delivery_address",
         "status",
     )
-    list_filter = ("status", "created_at")
+    list_filter = ("status", "created_at", "updated_at")
+    ordering = ("-created_at",)
     fieldsets = [
         (
             "User Information",
@@ -115,9 +119,7 @@ class Order(admin.ModelAdmin):
             "Destination Information",
             {
                 "fields": [
-                    "delivery_city",
-                    "delivery_pickup_point",
-                    "requires_couriers_delivery",
+                    "delivery_address",
                 ],
             },
         ),
@@ -132,7 +134,7 @@ class Order(admin.ModelAdmin):
         (
             "Date-Time Information",
             {
-                "fields": ["created_at"],
+                "fields": ["created_at", "updated_at", "deleted_at",],
             },
         ),
     ]
@@ -151,8 +153,10 @@ class ReviewItemAdmin(admin.ModelAdmin):
         "product",
         "rate",
         "created_at",
+        "updated_at",
+        "deleted_at",
     )
-    search_fields = ("author__username", "product__name")
+    search_fields = ("author__username", "author__email", "product__name")
     list_filter = ("rate",)
     fieldsets = [
         (
@@ -164,7 +168,7 @@ class ReviewItemAdmin(admin.ModelAdmin):
         (
             "Date-Time Information",
             {
-                "fields": ["created_at"],
+                "fields": ["created_at", "updated_at", "deleted_at",],
             },
         ),
     ]

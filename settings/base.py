@@ -30,12 +30,14 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
 ]
 
 PROJECT_APPS = [
     "apps.orders.apps.OrdersConfig",
     "apps.users.apps.UsersConfig",
     "apps.products.apps.ProductsConfig",
+    "apps.abstracts.apps.AbstractsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_AND_THIRD_PARTY_APPS + PROJECT_APPS
@@ -134,4 +136,12 @@ UNFOLD = {
             },
         ]
     },
+}
+
+# ----------------------------------------------
+# Rest Framework
+#
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }

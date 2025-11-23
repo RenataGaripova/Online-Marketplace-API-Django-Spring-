@@ -2,7 +2,7 @@
 from django.contrib import admin
 
 # Project modules
-from .models import Category, Product
+from .models import Category, Product, Store
 
 
 @admin.register(Category)
@@ -15,6 +15,9 @@ class CategoryAdmin(admin.ModelAdmin):
         "id",
         "name",
         "description",
+        "created_at",
+        "updated_at",
+        "deleted_at",
     )
     search_fields = ("name",)
     list_filter = (
@@ -31,6 +34,7 @@ class CategoryAdmin(admin.ModelAdmin):
             },
         ),
     ]
+    readonly_fields = ("created_at", "updated_at", "deleted_at",)
 
 
 @admin.register(Product)
@@ -43,19 +47,22 @@ class ProductAdmin(admin.ModelAdmin):
         "id",
         "name",
         "category",
-        "seller",
+        # "seller",
         "price",
         "created_at",
+        "updated_at",
+        "deleted_at",
     )
     search_fields = (
         "name",
         "category__name",
-        "seller__email",
+        # "seller__email",
     )
     list_filter = (
         "category",
-        "seller",
+        # "seller",
         "created_at",
+        "updated_at",
     )
     ordering = ("-created_at",)
 
@@ -76,16 +83,50 @@ class ProductAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "category",
-                    "seller",
+                    # "seller",
                 ),
             },
         ),
         (
-            "Date Information",
+            "Date-Time Information",
             {
-                "fields": ("created_at",),
+                "fields": ["created_at", "updated_at", "deleted_at",],
             },
         ),
     ]
 
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "updated_at", "deleted_at",)
+
+
+@admin.register(Store)
+class StoreAdmin(admin.ModelAdmin):
+    """
+    Review admin configuration class.
+    """
+
+    list_display = (
+        "id",
+        "owner",
+        "name",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    )
+    search_fields = ("owner__email", "name")
+    list_filter = ("created_at", "updated_at",)
+    ordering = ("-created_at",)
+    fieldsets = [
+        (
+            "Store Information",
+            {
+                "fields": ["owner", "name", "description"],
+            },
+        ),
+        (
+            "Date-Time Information",
+            {
+                "fields": ["created_at", "updated_at", "deleted_at",],
+            },
+        ),
+    ]
+    readonly_fields = ("created_at", "updated_at", "deleted_at",)
