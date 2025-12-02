@@ -1,18 +1,3 @@
- test-ainur
-from django.contrib import admin
-
-from .models import Product, Category
-
-
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    pass
-
 # Django modules
 from django.contrib import admin
 
@@ -145,4 +130,3 @@ class StoreAdmin(admin.ModelAdmin):
         ),
     ]
     readonly_fields = ("created_at", "updated_at", "deleted_at",)
-main

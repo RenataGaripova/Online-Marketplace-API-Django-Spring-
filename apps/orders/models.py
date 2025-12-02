@@ -27,7 +27,7 @@ from apps.abstracts.models import AbstractBaseModel
 
 class SoftDeleteManager(Manager):
     """Manager that excludes soft-deleted objects."""
-    
+
     def get_queryset(self):
         return super().get_queryset().filter(deleted_at__isnull=True)
 
@@ -50,7 +50,7 @@ class CartItemQuerySet(QuerySet):
 
 class CartItemManager(Manager):
     """Cart Item Manager with soft delete filtering."""
-    
+
     def get_queryset(self):
         """Filter out soft-deleted objects."""
         return CartItemQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
@@ -165,10 +165,12 @@ class Order(AbstractBaseModel):
                 raise ValidationError("Phone number must start with +")
             digits = self.phone_number[1:]
             if not digits.isdigit():
-                raise ValidationError("Phone number must contain only digits after +")
+                raise ValidationError(
+                    "Phone number must contain only digits after +")
             if len(digits) < 9 or len(digits) > 15:
-                raise ValidationError("Phone number must have between 9 and 15 digits")
-        
+                raise ValidationError(
+                    "Phone number must have between 9 and 15 digits")
+
         # Delivery address validation
         if not self.delivery_address or not self.delivery_address.strip():
             raise ValidationError("Delivery address cannot be empty")

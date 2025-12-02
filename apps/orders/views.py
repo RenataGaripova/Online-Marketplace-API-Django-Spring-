@@ -1,14 +1,11 @@
-# Python modules
-from typing import Any
-
 # Django modules
 from rest_framework.viewsets import (
     ModelViewSet,
     ViewSet,
 )
+from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
-from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import QuerySet, Count, Sum, F
 from django.db import transaction
@@ -61,7 +58,7 @@ from apps.users.models import CustomUser
 
 # ----------------------------------------------
 # REVIEWS
-# 
+#
 
 class ReviewViewSet(ModelViewSet):
     serializer_class = ReviewSerializer
@@ -94,7 +91,7 @@ class ReviewViewSet(ModelViewSet):
 
 # ----------------------------------------------
 # CART ITEMS
-# 
+#
 
 class CartItemViewSet(ViewSet):
     pagination_class = PageNumberPagination
@@ -118,7 +115,8 @@ class CartItemViewSet(ViewSet):
     )
     def list(self, request: DRFRequest) -> DRFResponse:
         if not request.user.is_staff:
-            raise PermissionDenied("You can't access cart items of other users.")
+            raise PermissionDenied(
+                "You can't access cart items of other users.")
 
         users = CustomUser.objects.prefetch_related("cart_items").annotate(
             total_positions=Count("cart_items__id")
@@ -143,9 +141,11 @@ class CartItemViewSet(ViewSet):
         user = get_object_or_404(CustomUser, pk=user_id)
 
         if request.user != user and not request.user.is_staff:
-            raise PermissionDenied("You can't access cart items of other users.")
+            raise PermissionDenied(
+                "You can't access cart items of other users.")
 
-        cart_items = CartItem.objects.filter(user=user).select_related("store_product")
+        cart_items = CartItem.objects.filter(
+            user=user).select_related("store_product")
 
         serializer = CartItemBaseSerializer(cart_items, many=True)
 
@@ -178,15 +178,18 @@ class CartItemViewSet(ViewSet):
         except (ValueError, TypeError):
             return DRFResponse({"quantity": ["Quantity must be a valid integer."]}, HTTP_400_BAD_REQUEST)
 
-        store_product = get_object_or_404(StoreProductRelation, id=store_product_id)
+        store_product = get_object_or_404(
+            StoreProductRelation, id=store_product_id)
 
         if quantity > store_product.quantity:
             return DRFResponse(
-                {"products": [f"Only {store_product.quantity} items are in stock."]},
+                {"products": [
+                    f"Only {store_product.quantity} items are in stock."]},
                 HTTP_400_BAD_REQUEST
             )
 
-        existing = CartItem.objects.filter(user=request.user, store_product=store_product).first()
+        existing = CartItem.objects.filter(
+            user=request.user, store_product=store_product).first()
 
         if existing:
             existing.quantity += quantity
@@ -211,7 +214,8 @@ class CartItemViewSet(ViewSet):
         }
     )
     def partial_update(self, request: DRFRequest, pk: int) -> DRFResponse:
-        item = CartItem.objects.filter(id=pk).select_related("store_product").first()
+        item = CartItem.objects.filter(
+            id=pk).select_related("store_product").first()
         if not item:
             return DRFResponse({"pk": [f"CartItem with id={pk} does not exist."]}, HTTP_404_NOT_FOUND)
 
@@ -228,11 +232,13 @@ class CartItemViewSet(ViewSet):
 
         if quantity > item.store_product.quantity:
             return DRFResponse(
-                {"products": [f"Only {item.store_product.quantity} items are in stock."]},
+                {"products": [
+                    f"Only {item.store_product.quantity} items are in stock."]},
                 HTTP_400_BAD_REQUEST
             )
 
-        serializer = CartItemUpdateSerializer(item, data=request.data, partial=True)
+        serializer = CartItemUpdateSerializer(
+            item, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -270,7 +276,8 @@ class OrderListView(ListAPIView):
         user = get_object_or_404(CustomUser, pk=self.kwargs.get("user_id"))
         return Order.objects.filter(user=user).prefetch_related("order_items").annotate(
             total_positions=Count("order_items__id"),
-            total_price=Sum(F("order_items__price") * F("order_items__quantity")),
+            total_price=Sum(F("order_items__price") *
+                            F("order_items__quantity")),
         )
 
     @extend_schema(
@@ -309,7 +316,8 @@ class OrderCreateView(APIView):
     def post(self, request: DRFRequest):
         with transaction.atomic():
             user = request.user
-            cart_items = CartItem.objects.filter(user=user).select_related("store_product")
+            cart_items = CartItem.objects.filter(
+                user=user).select_related("store_product")
 
             if not cart_items.exists():
                 return DRFResponse(
@@ -365,7 +373,8 @@ class OrderCreateView(APIView):
 
             serializer = OrderListCreateSerializer(
                 order,
-                context={"total_price": total_price, "total_positions": total_positions},
+                context={"total_price": total_price,
+                         "total_positions": total_positions},
             )
 
             return DRFResponse(serializer.data, HTTP_201_CREATED)

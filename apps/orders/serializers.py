@@ -8,10 +8,9 @@ from rest_framework.serializers import (
     SerializerMethodField,
     IntegerField,
     DecimalField,
-    Serializer, 
-    ListField, 
+    Serializer,
+    ListField,
     CharField,
-    BooleanField,
 )
 
 # Project modules
@@ -24,6 +23,7 @@ from .models import (
 from apps.users.models import (
     CustomUser,
 )
+
 
 class OrderCreate400Serializer(Serializer):
     """
@@ -81,7 +81,6 @@ class HTTP403PermissionDeniedSerializer(Serializer):
 
     class Meta:
         fields = ("detail",)
-
 
 
 class ReviewCreate400Serializer(Serializer):
