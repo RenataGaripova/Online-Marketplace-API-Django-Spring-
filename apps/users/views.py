@@ -1,3 +1,4 @@
+ test-ainur
 from rest_framework import generics, permissions
 from django.contrib.auth import get_user_model
 from .serializers import RegisterSerializer, UserSerializer
@@ -19,3 +20,8 @@ class UserMeView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+
+from django.shortcuts import render
+
+# Create your views here.
+ main

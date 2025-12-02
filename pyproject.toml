@@ -1,0 +1,4 @@
+[tool.pytest]
+minversion = "9.0"
+pythonpath = ["."]
+DJANGO_SETTINGS_MODULE = "settings.env.local"
