@@ -21,7 +21,7 @@ from apps.abstracts.models import AbstractBaseModel
 
 class SoftDeleteManager(Manager):
     """Manager that excludes soft-deleted objects."""
-    
+
     def get_queryset(self):
         return super().get_queryset().filter(deleted_at__isnull=True)
 
@@ -46,7 +46,9 @@ class Category(AbstractBaseModel):
         """Validate the model."""
         super().clean()
         if self.name and len(self.name) > self.MAX_NAME_LENGTH:
-            raise ValidationError(f"Category name cannot exceed {self.MAX_NAME_LENGTH} characters")
+            raise ValidationError(
+                f"Category name can't exceed {self.MAX_NAME_LENGTH} characters"
+            )
 
     def save(self, *args, **kwargs):
         """Override save to call full_clean."""
@@ -90,7 +92,9 @@ class Product(AbstractBaseModel):
         """Validate the model."""
         super().clean()
         if self.name and len(self.name) > self.MAX_NAME_LENGTH:
-            raise ValidationError(f"Product name cannot exceed {self.MAX_NAME_LENGTH} characters")
+            raise ValidationError(
+                f"Product name cannot exceed {self.MAX_NAME_LENGTH} characters"
+            )
         if self.price is not None and self.price < 0:
             raise ValidationError("Product price cannot be negative")
 
@@ -100,7 +104,8 @@ class Product(AbstractBaseModel):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Override delete to perform soft delete and cascade to store relations."""
+        """Override delete to perform soft delete
+        and cascade to store relations."""
         # Soft delete all related store product relations first
         from apps.products.models import StoreProductRelation
         for relation in StoreProductRelation.objects.filter(product=self):

@@ -1,5 +1,9 @@
+# Django modules
 from rest_framework import serializers
+
+# Project modules
 from .models import Category, Product
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

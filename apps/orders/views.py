@@ -70,6 +70,7 @@ class ReviewAPIView(APIView):
 
     @extend_schema(
         summary="Get a list of reviews.",
+        tags=["reviews"],
         request=ReviewSerializer,
         responses={
             HTTP_200_OK: ReviewSerializer,
@@ -138,6 +139,7 @@ class ReviewAPIView(APIView):
 
     @extend_schema(
         summary="Review create.",
+        tags=["reviews"],
         request=ReviewSerializer,
         responses={
             HTTP_201_CREATED: ReviewSerializer,
@@ -235,6 +237,7 @@ class ReviewDetailAPIView(APIView):
 
     @extend_schema(
         summary="Get review's details.",
+        tags=["reviews"],
         request=ReviewSerializer,
         responses={
             HTTP_200_OK: ReviewSerializer,
@@ -298,6 +301,7 @@ class ReviewDetailAPIView(APIView):
 
     @extend_schema(
         summary="Review partial update.",
+        tags=["reviews"],
         request=ReviewSerializer,
         responses={
             HTTP_200_OK: ReviewSerializer,
@@ -370,6 +374,7 @@ class ReviewDetailAPIView(APIView):
 
     @extend_schema(
         summary="Review destroy.",
+        tags=["reviews"],
         responses={
             HTTP_204_NO_CONTENT: {},
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -453,6 +458,7 @@ class CartItemViewSet(ViewSet):
 
     @extend_schema(
         summary="Get a list of cart items.",
+        tags=["carts"],
         responses={
             HTTP_200_OK: CustomUserCartSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -517,6 +523,7 @@ class CartItemViewSet(ViewSet):
 
     @extend_schema(
         summary="Get cart items of a single user.",
+        tags=["carts"],
         responses={
             HTTP_200_OK: CartItemRetrieveSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -589,6 +596,7 @@ class CartItemViewSet(ViewSet):
 
     @extend_schema(
         summary="Cart item create.",
+        tags=["carts"],
         request=CartItemCreateSerializer,
         responses={
             HTTP_201_CREATED: CartItemCreateSerializer,
@@ -693,6 +701,7 @@ class CartItemViewSet(ViewSet):
 
     @extend_schema(
         summary="Cart item partial update.",
+        tags=["carts"],
         request=CartItemUpdateSerializer,
         responses={
             HTTP_200_OK: CartItemUpdateSerializer,
@@ -785,6 +794,7 @@ class CartItemViewSet(ViewSet):
 
     @extend_schema(
         summary="Cart item destroy.",
+        tags=["carts"],
         responses={
             HTTP_204_NO_CONTENT: {},
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -873,6 +883,7 @@ class OrderListView(ListAPIView):
 
     @extend_schema(
         summary="Get a list of user orders.",
+        tags=["orders"],
         responses={
             HTTP_200_OK: OrderListCreateSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -933,6 +944,7 @@ class OrderCreateView(APIView):
 
     @extend_schema(
         summary="Create a new order.",
+        tags=["orders"],
         request=OrderCreateOKSerializer,
         responses={
             HTTP_201_CREATED: OrderListCreateSerializer,
