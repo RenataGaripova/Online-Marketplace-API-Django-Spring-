@@ -1,0 +1,1854 @@
+openapi: 3.0.3
+info:
+  title: Online Marketplace API
+  version: 1.0.0
+  description: Django Project
+paths:
+  /api/token/:
+    post:
+      operationId: token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/token/refresh/:
+    post:
+      operationId: token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/categories/:
+    get:
+      operationId: v1_categories_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: v1_categories_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/categories/{id}/:
+    get:
+      operationId: v1_categories_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    put:
+      operationId: v1_categories_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: v1_categories_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategory'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: v1_categories_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this category.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/me/:
+    get:
+      operationId: v1_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_me_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_me_partial_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/products/:
+    get:
+      operationId: v1_products_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+    post:
+      operationId: v1_products_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/{id}/:
+    get:
+      operationId: v1_products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: v1_products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: v1_products_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    delete:
+      operationId: v1_products_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/products/{product_id}/reviews/:
+    get:
+      operationId: v1_products_reviews_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewList'
+          description: ''
+    post:
+      operationId: v1_products_reviews_create
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Review'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Review'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+  /api/v1/products/{product_id}/reviews/{id}/:
+    get:
+      operationId: v1_products_reviews_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    put:
+      operationId: v1_products_reviews_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Review'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Review'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    patch:
+      operationId: v1_products_reviews_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReview'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    delete:
+      operationId: v1_products_reviews_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: product_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/register/:
+    post:
+      operationId: v1_register_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/v1/token/:
+    post:
+      operationId: v1_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/token/refresh/:
+    post:
+      operationId: v1_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/token/verify/:
+    post:
+      operationId: v1_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/v1/users/{user_id}/cart/:
+    get:
+      operationId: v1_users_cart_retrieve
+      summary: Cart item retrieve
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemBase'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP403PermissionDenied'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemRetrieve404'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+  /api/v1/users/{user_id}/order_create/:
+    post:
+      operationId: v1_users_order_create_create
+      summary: Order create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderListCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderListCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderListCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListCreate'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreate400'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreate404'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP403PermissionDenied'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+  /api/v1/users/{user_id}/orders/:
+    get:
+      operationId: v1_users_orders_list
+      summary: Order list retrieve
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderListCreateList'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListGet403'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListGet404'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+  /api/v1/users/carts/:
+    get:
+      operationId: v1_users_carts_list
+      summary: Users list retrieve
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomUserCartList'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemList403'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+    post:
+      operationId: v1_users_carts_create
+      summary: Cart item create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemCreate'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemCreate400'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP403PermissionDenied'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemRetrieve404'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+  /api/v1/users/carts/{id}/:
+    patch:
+      operationId: v1_users_carts_partial_update
+      summary: Cart item update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemUpdate'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemCreate400'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP403PermissionDenied'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemPartialUpdate404'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+    delete:
+      operationId: v1_users_carts_destroy
+      summary: Cart item delete
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP403PermissionDenied'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemDestroy404'
+          description: ''
+        '405':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTP405MethodNotAllowed'
+          description: ''
+components:
+  schemas:
+    CartItemBase:
+      type: object
+      description: Serializer for CartItem model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        store_product:
+          type: integer
+          title: Product
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        total_product_price:
+          type: number
+          format: double
+          description: Get total price for single position in a cart.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - store_product
+      - total_product_price
+      - updated_at
+    CartItemCreate:
+      type: object
+      description: |-
+        Serializer for CartItem model.
+        Handles the creation of new cart item.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        store_product:
+          type: integer
+          title: Product
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        total_product_price:
+          type: number
+          format: double
+          description: Get total price for single position in a cart.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - store_product
+      - total_product_price
+      - updated_at
+      - user
+    CartItemCreate400:
+      type: object
+      description: Serializer for CartItem create 400 responses.
+      properties:
+        product:
+          type: array
+          items:
+            type: string
+        products:
+          type: array
+          items:
+            type: string
+        store_product:
+          type: array
+          items:
+            type: string
+        quantity:
+          type: array
+          items:
+            type: string
+    CartItemDestroy404:
+      type: object
+      description: Serializer for destroy 404 responses (CartItem not found).
+      properties:
+        pk:
+          type: array
+          items:
+            type: string
+      required:
+      - pk
+    CartItemList403:
+      type: object
+      description: Serializer for CartItem list 403 responses (permission denied).
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    CartItemPartialUpdate404:
+      type: object
+      description: Serializer for partial_update 404 responses (CartItem not found).
+      properties:
+        pk:
+          type: array
+          items:
+            type: string
+      required:
+      - pk
+    CartItemRetrieve404:
+      type: object
+      description: Serializer for CartItem retrieve 404 responses (cart/user not found).
+      properties:
+        pk:
+          type: array
+          items:
+            type: string
+        detail:
+          type: string
+    CartItemUpdate:
+      type: object
+      description: |-
+        Serializer for CartItem model.
+        Handles the partial update of a cart item.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        store_product:
+          type: integer
+          readOnly: true
+          title: Product
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        total_product_price:
+          type: number
+          format: double
+          description: Get total price for single position in a cart.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - store_product
+      - total_product_price
+      - updated_at
+      - user
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    CustomUserCart:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        total_positions:
+          type: integer
+        cart_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItemBase'
+      required:
+      - cart_items
+      - email
+      - id
+      - total_positions
+    HTTP403PermissionDenied:
+      type: object
+      description: Serializer for HTTP 403 Permission Denied response.
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    HTTP405MethodNotAllowed:
+      type: object
+      description: Serializer for HTTP 405 Method Not Allowed response.
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    OrderCreate400:
+      type: object
+      description: Serializer for unsuccessful order creation responses.
+      properties:
+        cart_items:
+          type: array
+          items:
+            type: string
+      required:
+      - cart_items
+    OrderCreate404:
+      type: object
+      description: Serializer for unsuccessful order creation responses.
+      properties:
+        phone_number:
+          type: array
+          items:
+            type: string
+        delivery_address:
+          type: array
+          items:
+            type: string
+    OrderItemBase:
+      type: object
+      description: Order Item Base Serializer.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        store_product:
+          type: integer
+          title: Product
+        name:
+          type: string
+          title: Products name
+          maxLength: 256
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          title: Ordered quantity
+        total_product_price:
+          type: number
+          format: double
+          description: Get total price for single position in an order.
+          readOnly: true
+      required:
+      - id
+      - name
+      - price
+      - store_product
+      - total_product_price
+    OrderListCreate:
+      type: object
+      description: Serializer for list of orders.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        phone_number:
+          type: string
+          pattern: ^\+?1?\d{9,15}$
+          maxLength: 20
+        delivery_address:
+          type: string
+          maxLength: 1024
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+          title: Order's status
+        total_positions:
+          type: integer
+          readOnly: true
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        order_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemBase'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - delivery_address
+      - id
+      - order_items
+      - phone_number
+      - status
+      - total_positions
+      - total_price
+      - updated_at
+      - user
+    OrderListGet403:
+      type: object
+      description: Serializer for Order list 403 responses (permission denied).
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    OrderListGet404:
+      type: object
+      description: Serializer for Order list 404 responses (user not found).
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedCustomUserCartList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomUserCart'
+    PaginatedOrderListCreateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderListCreate'
+    PaginatedProductList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PaginatedReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+    PatchedCartItemUpdate:
+      type: object
+      description: |-
+        Serializer for CartItem model.
+        Handles the partial update of a cart item.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        store_product:
+          type: integer
+          readOnly: true
+          title: Product
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+        total_product_price:
+          type: number
+          format: double
+          description: Get total price for single position in a cart.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+    PatchedProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        image:
+          type: string
+          format: uri
+          nullable: true
+        category:
+          type: integer
+    PatchedReview:
+      type: object
+      description: Serializer for Review model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        rate:
+          type: integer
+          maximum: 5
+          minimum: 0
+          title: Rating
+        text:
+          type: string
+          title: Reviews's text
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          maxLength: 20
+        is_seller:
+          type: boolean
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        image:
+          type: string
+          format: uri
+          nullable: true
+        category:
+          type: integer
+      required:
+      - category
+      - created_at
+      - id
+      - name
+      - price
+      - updated_at
+    Register:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+        password2:
+          type: string
+          writeOnly: true
+        phone:
+          type: string
+          nullable: true
+          maxLength: 20
+        is_seller:
+          type: boolean
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+      required:
+      - email
+      - password
+      - password2
+      - username
+    Review:
+      type: object
+      description: Serializer for Review model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        rate:
+          type: integer
+          maximum: 5
+          minimum: 0
+          title: Rating
+        text:
+          type: string
+          title: Reviews's text
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - text
+      - updated_at
+      - user
+    StatusEnum:
+      enum:
+      - P
+      - S
+      - D
+      type: string
+      description: |-
+        * `P` - Processing
+        * `S` - Shipped
+        * `D` - Delivered
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          maxLength: 20
+        is_seller:
+          type: boolean
+        address:
+          type: string
+          nullable: true
+          maxLength: 255
+      required:
+      - email
+      - id
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
