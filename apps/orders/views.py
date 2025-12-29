@@ -32,12 +32,17 @@ from rest_framework.status import (
     HTTP_429_TOO_MANY_REQUESTS,
 )
 from rest_framework.pagination import PageNumberPagination
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter
+)
 # Project modules
 from apps.products.models import Product, StoreProductRelation
 from .models import Review, Order, OrderItem, CartItem
 from .serializers import (
     ReviewSerializer,
+    UsernameLimit,
     CartItemBaseSerializer,
     CartItemCreateSerializer,
     CartItemUpdateSerializer,
@@ -72,6 +77,10 @@ class ReviewAPIView(APIView):
         summary="Get a list of reviews.",
         tags=["reviews"],
         request=ReviewSerializer,
+        parameters=[
+            OpenApiParameter("username", str, required=False),
+            OpenApiParameter("limit", int, required=False),
+        ],
         responses={
             HTTP_200_OK: ReviewSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -126,8 +135,21 @@ class ReviewAPIView(APIView):
                 status=HTTP_404_NOT_FOUND,
             )
 
+        query_params_serializer: UsernameLimit = UsernameLimit(
+            data=request.query_params,
+        )
+
+        query_params_serializer.is_valid(raise_exception=True)
+        username = query_params_serializer.validated_data.get("username")
+        limit = query_params_serializer.validated_data.get("limit")
+
         reviews: QuerySet[Review] = product.reviews.all()
+        if username:
+            reviews = reviews.select_related("user").filter(
+                user__username__icontains=username)
+
         paginator: PageNumberPagination = self.pagination_class()
+        paginator.page_size = limit
         page = paginator.paginate_queryset(reviews, request=request)
 
         serializer: ReviewSerializer = ReviewSerializer(
@@ -459,6 +481,10 @@ class CartItemViewSet(ViewSet):
     @extend_schema(
         summary="Get a list of cart items.",
         tags=["carts"],
+        parameters=[
+            OpenApiParameter("username", str, required=False),
+            OpenApiParameter("limit", int, required=False),
+        ],
         responses={
             HTTP_200_OK: CustomUserCartSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
@@ -506,12 +532,28 @@ class CartItemViewSet(ViewSet):
                 "You can't access cart items of other users."
             )
 
-        users: QuerySet[CustomUser] = CustomUser.objects.prefetch_related(
-            "cart_items").annotate(
-                total_positions=Count("cart_items__id")
+        query_params_serializer: UsernameLimit = UsernameLimit(
+            data=request.query_params,
         )
 
+        query_params_serializer.is_valid(raise_exception=True)
+        username = query_params_serializer.validated_data.get("username")
+        limit = query_params_serializer.validated_data.get("limit")
+
+        if username:
+            users: QuerySet[CustomUser] = CustomUser.objects.get(
+                username__icontains=username).prefetch_related(
+                "cart_items").annotate(
+                    total_positions=Count("cart_items__id")
+            )
+        else:
+            users: QuerySet[CustomUser] = CustomUser.objects.prefetch_related(
+                "cart_items").annotate(
+                    total_positions=Count("cart_items__id")
+            )
+
         paginator: PageNumberPagination = self.pagination_class()
+        paginator.page_size = limit
         page = paginator.paginate_queryset(users, request=request)
 
         serializer: CustomUserCartSerializer = CustomUserCartSerializer(

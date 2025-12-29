@@ -71,6 +71,20 @@ class ReviewSerializer(ModelSerializer):
         ]
 
 
+class UsernameLimit(Serializer):
+    """Serializer for query parameters."""
+    username = CharField(
+        required=False,
+        allow_blank=True,
+    )
+    limit = IntegerField(
+        required=False,
+        min_value=1,
+        max_value=25,
+        default=25,
+    )
+
+
 # ----------------------------------------------
 # CART ITEMS
 #

@@ -180,3 +180,4 @@ media/
 /!*/static/
 
 local.sh
+db.sqlite3
