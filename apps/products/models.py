@@ -1,8 +1,5 @@
-# Python modules
-from typing import Any
-
 # Django modules
-from django.db import models, transaction
+from django.db import models
 from django.db.models import (
     CharField,
     TextField,
@@ -13,16 +10,21 @@ from django.db.models import (
     IntegerField,
     DecimalField,
     UniqueConstraint,
-    QuerySet,
-    Q,
-    PositiveIntegerField,
+    Manager,
 )
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.utils import timezone as django_timezone
 
 # Project modules
 from apps.abstracts.models import AbstractBaseModel
+
+
+class SoftDeleteManager(Manager):
+    """Manager that excludes soft-deleted objects."""
+
+    def get_queryset(self) -> QuerySet:
+        """Return queryset excluding soft-deleted objects."""
+        return super().get_queryset().filter(deleted_at__isnull=True)
 
 
 class Category(AbstractBaseModel):
@@ -30,80 +32,36 @@ class Category(AbstractBaseModel):
     Category database (table) model.
     """
     MAX_NAME_LENGTH = 100
-    MAX_DEPTH = 2
 
     name = CharField(max_length=MAX_NAME_LENGTH, unique=True)
     description = TextField(blank=True, null=True)
-    image = models.ImageField(upload_to="category_images")
-    parent = models.ForeignKey(
-        "self",
-        related_name="subcategories",
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-    )
-    depth = PositiveIntegerField(
-        editable=False,
-        default=1,
-    )
 
-    class Meta:
-        """Metadata."""
-        verbose_name_plural = "Categories"
-        default_related_name = "categories"
-        ordering = ("-created_at",)
+    objects = SoftDeleteManager()
+    all_objects = Manager()
 
     def __str__(self) -> str:
         """Returns the string representation of the object."""
         return self.name
 
-    def save(
-        self, *args: tuple[Any, ...],
-        **kwargs: dict[Any, Any]
-    ) -> None:
-        """Saves an object of the model."""
-        if self.parent:
-            self.depth = self.parent.depth + 1
-        else:
-            self.depth = 1
-
-        if self.depth > self.MAX_DEPTH:
+    def clean(self) -> None:
+        """Validate the model."""
+        super().clean()
+        if self.name and len(self.name) > self.MAX_NAME_LENGTH:
             raise ValidationError(
-                f"Maximum depth — {self.MAX_DEPTH}"
+                f"Category name can't exceed {self.MAX_NAME_LENGTH} characters"
             )
+
+    def save(self, *args, **kwargs) -> None:
+        """Override save to call full_clean."""
+        self.full_clean()
         super().save(*args, **kwargs)
 
-    @transaction.atomic
-    def soft_delete_with_relations(
-        self, *args: tuple[Any, ...],
-        **kwargs: dict[Any, Any]
-    ) -> None:
+    def delete(self, *args, **kwargs) -> None:
         """Override delete to perform soft delete and cascade to products."""
-        now = django_timezone.now()
-        if self.deleted_at:
-            return
-        self.products.filter(
-            deleted_at__isnull=True,
-        ).update(deleted_at=now)
-        self.subcategories.filter(
-            deleted_at__isnull=True,
-        ).update(deleted_at=now)
-        self.deleted_at = now
-        self.save(update_fields=["deleted_at"])
-
-    def get_all_products(
-        self, *args: tuple[Any, ...],
-        **kwargs: dict[Any, Any]
-    ) -> QuerySet["Product"]:
-        """Get all products from parent category and it's subcategories."""
-        direct_subcategories = self.subcategories.all()
-        return Product.objects.filter(
-            Q(category=self) | Q(category__in=direct_subcategories)
-        )
-
-    def count_all_products(self):
-        """Get the number of products from parent and it's subcategories."""
-        return self.get_all_products().count()
+        # Soft delete all related products first
+        for product in self.products.all():
+            product.soft_delete()
+        self.soft_delete()
 
 
 class Product(AbstractBaseModel):
@@ -113,23 +71,19 @@ class Product(AbstractBaseModel):
     MAX_NAME_LENGTH = 100
     MAX_PRICE_DIGITS = 10
     MAX_DECIMAL_PLACES = 2
-    MIN_PRICE = 0.1
 
     category = ForeignKey(
-        Category, on_delete=models.CASCADE, related_name="products")
+        Category, on_delete=models.CASCADE, related_name='products')
     name = CharField(max_length=MAX_NAME_LENGTH)
     description = TextField(blank=True, null=True)
     price = DecimalField(
         max_digits=MAX_PRICE_DIGITS,
-        decimal_places=MAX_DECIMAL_PLACES,
+        decimal_places=MAX_DECIMAL_PLACES
     )
-    image = ImageField(upload_to="products/", blank=True, null=True)
+    image = ImageField(upload_to='products/', blank=True, null=True)
 
-    class Meta:
-        """Meta class."""
-
-        default_related_name = "products"
-        ordering = ("-created_at",)
+    objects = SoftDeleteManager()
+    all_objects = Manager()
 
     def __str__(self) -> str:
         """Returns the string representation of the object."""
@@ -138,7 +92,11 @@ class Product(AbstractBaseModel):
     def clean(self):
         """Validate the model."""
         super().clean()
-        if self.price < self.MIN_PRICE:
+        if self.name and len(self.name) > self.MAX_NAME_LENGTH:
+            raise ValidationError(
+                f"Product name cannot exceed {self.MAX_NAME_LENGTH} characters"
+            )
+        if self.price is not None and self.price < 0:
             raise ValidationError("Product price cannot be negative")
 
     def save(self, *args, **kwargs):
@@ -146,23 +104,14 @@ class Product(AbstractBaseModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    @transaction.atomic
-    def soft_delete_with_relations(
-        self, *args: tuple[Any, ...],
-        **kwargs: dict[Any, Any]
-    ) -> None:
-        """
-        Override delete to perform soft delete
-        and cascade to store products.
-        """
+    def delete(self, *args, **kwargs):
+        """Override delete to perform soft delete
+        and cascade to store relations."""
+        # Soft delete all related store product relations first
         from apps.products.models import StoreProductRelation
-        now = django_timezone.now()
-        StoreProductRelation.objects.filter(
-            product=self,
-            deleted_at__isnull=True,
-        ).update(deleted_at=now)
-        self.deleted_at = now
-        self.save(update_fields=["deleted_at"])
+        for relation in StoreProductRelation.objects.filter(product=self):
+            relation.soft_delete()
+        self.soft_delete()
 
 
 # New
@@ -170,49 +119,47 @@ class Store(AbstractBaseModel):
     """
     Store database (table) model.
     """
-    MAX_STORE_NAME_LENGTH = 128
+    MAX_Store_NAME_LENGTH = 128
 
     owner = ForeignKey(
         to=get_user_model(),
         on_delete=CASCADE,
+        verbose_name="Owner",
     )
     name = CharField(
-        max_length=MAX_STORE_NAME_LENGTH,
+        max_length=MAX_Store_NAME_LENGTH,
+        verbose_name="Store's name"
     )
-    description = TextField()
+    description = TextField(
+        verbose_name="Description",
+    )
     products = ManyToManyField(
         to="Product",
         through=("StoreProductRelation"),
         related_name="stores",
+        verbose_name="Available products",
     )
+
+    objects = SoftDeleteManager()
+    all_objects = Manager()
 
     class Meta:
         """Meta class."""
 
-        default_related_name = "stores"
-        ordering = ("-created_at",)
+        ordering = ('-created_at',)
 
     def __str__(self) -> str:
         """Magic str method."""
         return self.name
 
-    @transaction.atomic
-    def soft_delete_with_relations(
-        self, *args: tuple[Any, ...],
-        **kwargs: dict[Any, Any]
-    ) -> None:
-        """
-        Override delete to perform soft delete
-        and cascade to store products.
-        """
+    def delete(self, *args, **kwargs):
+        """Override delete to perform soft delete and
+        cascade to store relations."""
+        # Soft delete all related store product relations first
         from apps.products.models import StoreProductRelation
-        now = django_timezone.now()
-        StoreProductRelation.objects.filter(
-            store=self,
-            deleted_at__isnull=True,
-        ).update(deleted_at=now)
-        self.deleted_at = now
-        self.save(update_fields=["deleted_at"])
+        for relation in StoreProductRelation.objects.filter(store=self):
+            relation.soft_delete()
+        self.soft_delete()
 
 
 class StoreProductRelation(AbstractBaseModel):
@@ -220,28 +167,32 @@ class StoreProductRelation(AbstractBaseModel):
     MAX_NAME_LENGTH = 100
     MAX_PRICE_DIGITS = 10
     MAX_DECIMAL_PLACES = 2
-    MIN_PRICE = 0.1
 
     product = ForeignKey(
         to=Product,
         on_delete=CASCADE,
-        related_name="product_stores",
+        verbose_name="Product",
     )
     store = ForeignKey(
         to=Store,
         on_delete=CASCADE,
-        related_name="store_products",
+        verbose_name="Store",
     )
-    in_stock = IntegerField()
+    quantity = IntegerField(
+        verbose_name="In stock",
+    )
     price = DecimalField(
         max_digits=MAX_PRICE_DIGITS,
         decimal_places=MAX_DECIMAL_PLACES,
+        verbose_name="Price",
     )
+
+    objects = SoftDeleteManager()
+    all_objects = Manager()
 
     class Meta:
         """Meta class."""
 
-        ordering = ("-created_at",)
         constraints = [
             UniqueConstraint(
                 fields=["product", "store"],
@@ -252,12 +203,16 @@ class StoreProductRelation(AbstractBaseModel):
     def clean(self):
         """Validate the model."""
         super().clean()
-        if not self.quantity or self.quantity < 0:
+        if self.quantity is not None and self.quantity < 0:
             raise ValidationError("Quantity cannot be negative")
-        if not self.price or self.price < self.MIN_PRICE:
+        if self.price is not None and self.price < 0:
             raise ValidationError("Price cannot be negative")
 
     def save(self, *args, **kwargs):
         """Override save to call full_clean."""
         self.full_clean()
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Override delete to perform soft delete."""
+        self.soft_delete()
