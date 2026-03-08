@@ -1,6 +1,6 @@
 # Django modules
-from rest_framework import viewsets, permissions, filters
-from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets, permissions
+from rest_framework.viewsets import ViewSet
 from drf_spectacular.utils import (
     extend_schema_view,
     extend_schema,
@@ -8,7 +8,7 @@ from drf_spectacular.utils import (
 )
 
 # Project modules
-from .models import Category, Product
+from .models import Category
 from .serializers import CategorySerializer, ProductSerializer
 
 
@@ -57,6 +57,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     """
     Handles all types of requests related to categories models.
     """
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
@@ -104,8 +105,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         tags=["products"],
         summary="Update a product",
         description=(
-            "Fully update a product by its ID."
-            " Authentication is required."
+            "Fully update a product by its ID. Authentication is required."
         ),
         request=ProductSerializer,
         responses={200: ProductSerializer},
@@ -114,8 +114,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         tags=["products"],
         summary="Partially update a product",
         description=(
-            "Partially update a product by its ID."
-            " Authentication is required."
+            "Partially update a product by its ID. Authentication is required."
         ),
         request=ProductSerializer,
         responses={200: ProductSerializer},
@@ -124,28 +123,35 @@ class CategoryViewSet(viewsets.ModelViewSet):
         tags=["products"],
         summary="Delete a product",
         description=(
-            "Delete a product by its ID. "
-            "Authentication is required."
+            "Delete a product by its ID. Authentication is required."
         ),
         responses={204: None},
     ),
 )
-class ProductViewSet(viewsets.ModelViewSet):
-    """
-    Handles all types of requests related to products model.
-    """
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['category']
-    search_fields = ['name', 'description']
+class ProductViewSet(ViewSet):
+    def list():
+        pass
 
-    def get_permissions(self) -> list:
-        """Return appropriate permissions based on the action."""
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()]
-        return [permissions.AllowAny()]
+    def retrieve():
+        pass
 
-    def perform_create(self, serializer) -> None:
-        """Save the product with the current user as seller."""
-        serializer.save(seller=self.request.user)
+
+# class ProductViewSet(viewsets.ModelViewSet):
+#     """
+#     Handles all types of requests related to products model.
+#     """
+#     queryset = Product.objects.all()
+#     serializer_class = ProductSerializer
+#     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+#     filterset_fields = ['category']
+#     search_fields = ['name', 'description']
+
+#     def get_permissions(self) -> list:
+#         """Return appropriate permissions based on the action."""
+#         if self.action in ['create', 'update', 'partial_update', 'destroy']:
+#             return [permissions.IsAuthenticated()]
+#         return [permissions.AllowAny()]
+
+#     def perform_create(self, serializer) -> None:
+#         """Save the product with the current user as seller."""
+#         serializer.save(seller=self.request.user)

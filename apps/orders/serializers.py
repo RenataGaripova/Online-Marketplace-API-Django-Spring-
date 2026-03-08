@@ -73,6 +73,7 @@ class ReviewSerializer(ModelSerializer):
 
 class UsernameLimit(Serializer):
     """Serializer for query parameters."""
+
     username = CharField(
         required=False,
         allow_blank=True,
@@ -147,7 +148,12 @@ class CartItemBaseSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields = ["id", "created_at", "updated_at", "deleted_at",]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
 
     def get_total_product_price(self, obj: CartItem) -> float:
         """Get total price for single position in a cart."""
@@ -163,8 +169,9 @@ class CartItemRetrieveSerializer(Serializer):
 
     user = CharField()
     cart_items = CartItemBaseSerializer(many=True)
-    total = DecimalField(max_digits=MAX_PRICE_DIGITS,
-                         decimal_places=MAX_DECIMAL_PLACES)
+    total = DecimalField(
+        max_digits=MAX_PRICE_DIGITS, decimal_places=MAX_DECIMAL_PLACES
+    )
 
 
 class CartItemCreateSerializer(CartItemBaseSerializer):
@@ -175,6 +182,7 @@ class CartItemCreateSerializer(CartItemBaseSerializer):
 
     class Meta:
         """Metadata."""
+
         model = CartItem
         fields = (
             "id",
@@ -200,10 +208,12 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
     Serializer for CartItem model.
     Handles the partial update of a cart item.
     """
+
     user = StringRelatedField()
 
     class Meta:
         """Metadata."""
+
         model = CartItem
         fields = (
             "id",
@@ -231,6 +241,7 @@ class CustomUserCartSerializer(ModelSerializer):
 
     class Meta:
         """Metadata."""
+
         model = CustomUser
         fields = (
             "id",
@@ -247,8 +258,10 @@ class CustomUserCartSerializer(ModelSerializer):
 
 class OrderCreateOKSerializer(ModelSerializer):
     """Serializer for representing data for order creation."""
+
     class Meta:
         """Metadata."""
+
         model = Order
         fields = (
             "phone_number",
@@ -260,6 +273,7 @@ class OrderCreate400Serializer(Serializer):
     """
     Serializer for unsuccessful order creation responses.
     """
+
     cart_items = ListField(child=CharField())
 
     class Meta:
@@ -317,6 +331,7 @@ class OrderItemBaseSerializer(ModelSerializer):
 
 class OrderListCreateSerializer(ModelSerializer):
     """Serializer for list of orders."""
+
     MAX_PRICE_DIGITS = 10
     MAX_DECIMAL_PLACES = 2
 
@@ -331,6 +346,7 @@ class OrderListCreateSerializer(ModelSerializer):
 
     class Meta:
         """Metadata."""
+
         model = Order
         fields = (
             "id",
@@ -345,23 +361,15 @@ class OrderListCreateSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields = ["status", "created_at",
-                            "updated_at", "deleted_at",]
+        read_only_fields = [
+            "status",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
 
     def to_representation(self, instance):
         data: dict[Any, Any] = super().to_representation(instance)
         data["total_positions"] = self.context.get("total_positions")
         data["total_price"] = self.context.get("total_price")
         return data
-
-
-# ----------------------------------------------
-# DETAIL ERROR
-#
-
-class ErrorDetailSerializer(Serializer):
-    """Serializer for showing detail's of request's errors."""
-    detail = CharField()
-
-    class Meta:
-        fields = ("detail",)

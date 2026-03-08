@@ -11,6 +11,7 @@ from django.db.models import (
     DecimalField,
     UniqueConstraint,
     Manager,
+    QuerySet,
 )
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -31,6 +32,7 @@ class Category(AbstractBaseModel):
     """
     Category database (table) model.
     """
+
     MAX_NAME_LENGTH = 100
 
     name = CharField(max_length=MAX_NAME_LENGTH, unique=True)
@@ -68,19 +70,20 @@ class Product(AbstractBaseModel):
     """
     Product database (table) model.
     """
+
     MAX_NAME_LENGTH = 100
     MAX_PRICE_DIGITS = 10
     MAX_DECIMAL_PLACES = 2
 
     category = ForeignKey(
-        Category, on_delete=models.CASCADE, related_name='products')
+        Category, on_delete=models.CASCADE, related_name="products"
+    )
     name = CharField(max_length=MAX_NAME_LENGTH)
     description = TextField(blank=True, null=True)
     price = DecimalField(
-        max_digits=MAX_PRICE_DIGITS,
-        decimal_places=MAX_DECIMAL_PLACES
+        max_digits=MAX_PRICE_DIGITS, decimal_places=MAX_DECIMAL_PLACES
     )
-    image = ImageField(upload_to='products/', blank=True, null=True)
+    image = ImageField(upload_to="products/", blank=True, null=True)
 
     objects = SoftDeleteManager()
     all_objects = Manager()
@@ -109,6 +112,7 @@ class Product(AbstractBaseModel):
         and cascade to store relations."""
         # Soft delete all related store product relations first
         from apps.products.models import StoreProductRelation
+
         for relation in StoreProductRelation.objects.filter(product=self):
             relation.soft_delete()
         self.soft_delete()
@@ -119,6 +123,7 @@ class Store(AbstractBaseModel):
     """
     Store database (table) model.
     """
+
     MAX_Store_NAME_LENGTH = 128
 
     owner = ForeignKey(
@@ -127,8 +132,7 @@ class Store(AbstractBaseModel):
         verbose_name="Owner",
     )
     name = CharField(
-        max_length=MAX_Store_NAME_LENGTH,
-        verbose_name="Store's name"
+        max_length=MAX_Store_NAME_LENGTH, verbose_name="Store's name"
     )
     description = TextField(
         verbose_name="Description",
@@ -146,7 +150,7 @@ class Store(AbstractBaseModel):
     class Meta:
         """Meta class."""
 
-        ordering = ('-created_at',)
+        ordering = ("-created_at",)
 
     def __str__(self) -> str:
         """Magic str method."""
@@ -157,6 +161,7 @@ class Store(AbstractBaseModel):
         cascade to store relations."""
         # Soft delete all related store product relations first
         from apps.products.models import StoreProductRelation
+
         for relation in StoreProductRelation.objects.filter(store=self):
             relation.soft_delete()
         self.soft_delete()
@@ -164,6 +169,7 @@ class Store(AbstractBaseModel):
 
 class StoreProductRelation(AbstractBaseModel):
     """Many to many relation table for products and Stores."""
+
     MAX_NAME_LENGTH = 100
     MAX_PRICE_DIGITS = 10
     MAX_DECIMAL_PLACES = 2

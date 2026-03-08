@@ -35,8 +35,9 @@ from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
-    OpenApiParameter
+    OpenApiParameter,
 )
+
 # Project modules
 from apps.products.models import Product, StoreProductRelation
 from .models import Review, Order, OrderItem, CartItem
@@ -48,7 +49,6 @@ from .serializers import (
     CartItemUpdateSerializer,
     CustomUserCartSerializer,
     OrderListCreateSerializer,
-    ErrorDetailSerializer,
     ReviewCreate400Serializer,
     CartItemCreate400Serializer,
     CartItemUpdateDestroy404Serializer,
@@ -59,11 +59,13 @@ from .serializers import (
 )
 from .permissions import IsOwnerOrReadOnly
 from apps.users.models import CustomUser
+from apps.abstracts.serializers import ErrorDetailSerializer
 
 
 # ----------------------------------------------
 # REVIEWS
 #
+
 
 class ReviewAPIView(APIView):
     """
@@ -99,7 +101,7 @@ class ReviewAPIView(APIView):
                 description="Server receives too many requests.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def get(
         self,
@@ -146,7 +148,8 @@ class ReviewAPIView(APIView):
         reviews: QuerySet[Review] = product.reviews.all()
         if username:
             reviews = reviews.select_related("user").filter(
-                user__username__icontains=username)
+                user__username__icontains=username
+            )
 
         paginator: PageNumberPagination = self.pagination_class()
         paginator.page_size = limit
@@ -185,7 +188,7 @@ class ReviewAPIView(APIView):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def post(
         self,
@@ -246,6 +249,7 @@ class ReviewDetailAPIView(APIView):
     """
     Handles PATCH and DELETE requests to review model.
     """
+
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
 
     def get_object(
@@ -279,7 +283,7 @@ class ReviewDetailAPIView(APIView):
                 description="Server receives too many requests.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def get(
         self,
@@ -347,7 +351,7 @@ class ReviewDetailAPIView(APIView):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def patch(
         self,
@@ -415,7 +419,7 @@ class ReviewDetailAPIView(APIView):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def delete(
         self,
@@ -454,13 +458,15 @@ class ReviewDetailAPIView(APIView):
             status=HTTP_204_NO_CONTENT,
         )
 
+
 # ----------------------------------------------
 # CART ITEMS
 #
 
 
 class CartItemViewSet(ViewSet):
-    """Viewset for handling CartItem related endpoints. """
+    """Viewset for handling CartItem related endpoints."""
+
     pagination_class = PageNumberPagination
 
     def get_permissions(self):
@@ -503,7 +509,7 @@ class CartItemViewSet(ViewSet):
                 description="Server receives too many requests.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def list(
         self,
@@ -541,16 +547,16 @@ class CartItemViewSet(ViewSet):
         limit = query_params_serializer.validated_data.get("limit")
 
         if username:
-            users: QuerySet[CustomUser] = CustomUser.objects.get(
-                username__icontains=username).prefetch_related(
-                "cart_items").annotate(
-                    total_positions=Count("cart_items__id")
+            users: QuerySet[CustomUser] = (
+                CustomUser.objects
+                .get(username__icontains=username)
+                .prefetch_related("cart_items")
+                .annotate(total_positions=Count("cart_items__id"))
             )
         else:
             users: QuerySet[CustomUser] = CustomUser.objects.prefetch_related(
-                "cart_items").annotate(
-                    total_positions=Count("cart_items__id")
-            )
+                "cart_items"
+            ).annotate(total_positions=Count("cart_items__id"))
 
         paginator: PageNumberPagination = self.pagination_class()
         paginator.page_size = limit
@@ -584,7 +590,7 @@ class CartItemViewSet(ViewSet):
                 description="Server receives too many requests.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def retrieve(
         self,
@@ -662,7 +668,7 @@ class CartItemViewSet(ViewSet):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def create(
         self,
@@ -767,7 +773,7 @@ class CartItemViewSet(ViewSet):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def partial_update(
         self,
@@ -795,13 +801,15 @@ class CartItemViewSet(ViewSet):
                 A response containing info about an updated item.
         """
         try:
-            existing_cartitem: CartItem = CartItem.objects.filter(
-                id=pk).select_related("store_product").first()
+            existing_cartitem: CartItem = (
+                CartItem.objects
+                .filter(id=pk)
+                .select_related("store_product")
+                .first()
+            )
         except CartItem.DoesNotExist:
             return DRFResponse(
-                data={
-                    "detail": [f"CartItem with id={pk} does not exist."]
-                },
+                data={"detail": [f"CartItem with id={pk} does not exist."]},
                 status=HTTP_404_NOT_FOUND,
             )
 
@@ -855,7 +863,7 @@ class CartItemViewSet(ViewSet):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def destroy(
         self,
@@ -885,9 +893,7 @@ class CartItemViewSet(ViewSet):
             existing_cartitem: CartItem = CartItem.objects.get(pk=pk)
         except CartItem.DoesNotExist:
             return DRFResponse(
-                data={
-                    "detail": [f"CartItem with id={pk} does not exist."]
-                },
+                data={"detail": [f"CartItem with id={pk} does not exist."]},
                 status=HTTP_404_NOT_FOUND,
             )
         self.check_object_permissions(request=request, obj=existing_cartitem)
@@ -895,6 +901,7 @@ class CartItemViewSet(ViewSet):
         return DRFResponse(
             status=HTTP_204_NO_CONTENT,
         )
+
 
 # ----------------------------------------------
 # ORDERS
@@ -913,12 +920,16 @@ class OrderListView(ListAPIView):
         """Get a list of user's orders."""
         user = get_object_or_404(CustomUser, pk=self.kwargs.get("user_id"))
 
-        user_orders = Order.objects.filter(user=user).prefetch_related(
-            "order_items").annotate(
+        user_orders = (
+            Order.objects
+            .filter(user=user)
+            .prefetch_related("order_items")
+            .annotate(
                 total_positions=Count("order_items__id"),
                 total_price=Sum(
                     F("order_items__price") * F("order_items__quantity")
                 ),
+            )
         )
 
         return user_orders
@@ -944,7 +955,7 @@ class OrderListView(ListAPIView):
                 description="Server receives too many requests.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def get(
         self,
@@ -969,8 +980,8 @@ class OrderListView(ListAPIView):
         """
 
         if (
-            request.user.id != self.kwargs.get("user_id") and
-            not request.user.is_staff
+            request.user.id != self.kwargs.get("user_id")
+            and not request.user.is_staff
         ):
             raise PermissionDenied("You can't access orders of other users.")
 
@@ -1010,7 +1021,7 @@ class OrderCreateView(APIView):
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
             ),
-        }
+        },
     )
     def post(
         self,
@@ -1037,8 +1048,9 @@ class OrderCreateView(APIView):
 
         with transaction.atomic():
             user = request.user
-            cart_items = CartItem.objects.filter(
-                user=user).select_related("store_product")
+            cart_items = CartItem.objects.filter(user=user).select_related(
+                "store_product"
+            )
 
             if not cart_items.exists():
                 return DRFResponse(
@@ -1056,7 +1068,9 @@ class OrderCreateView(APIView):
                 return DRFResponse(
                     data={
                         "phone_number": ["Phone number can't be null."],
-                        "delivery_address": ["Delivery address can't be null."]
+                        "delivery_address": [
+                            "Delivery address can't be null."
+                        ],
                     },
                     status=HTTP_404_NOT_FOUND,
                 )

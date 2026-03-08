@@ -3,7 +3,7 @@
 import os
 
 # Project modules
-from settings.conf import *
+from settings.conf import *  # noqa: F403
 
 
 # ----------------------------------------------
@@ -18,12 +18,6 @@ ASGI_APPLICATION = "settings.asgi.application"
 # Apps
 #
 DJANGO_AND_THIRD_PARTY_APPS = [
-    "unfold",
-
-    "unfold.contrib.filters",
-    "unfold.contrib.forms",
-    "unfold.contrib.inlines",
-
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -33,6 +27,7 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     "rest_framework",
     "drf_spectacular",
     "django_filters",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 PROJECT_APPS = [
@@ -74,10 +69,16 @@ TEMPLATES = [
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
+    },
 ]
 
 # ----------------------------------------------
@@ -99,55 +100,3 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.CustomUser"
-
-# ----------------------------------------------
-# Unfold
-#
-UNFOLD = {
-    "SITE_HEADER": "Online Marketplace API",
-    "SITE_TITLE": "Online Marketplace API",
-    "SITE_SYMBOL": "🛒",
-    "SHOW_LANG_SWITCH": False,
-
-    "SIDEBAR": {
-        "items": [
-            {
-                "label": "Users",
-                "icon": "user",
-                "items": [
-                    {"model": "users.CustomUser"},
-                ],
-            },
-            {
-                "label": "Products",
-                "icon": "package",
-                "items": [
-                    {"model": "products.Category"},
-                    {"model": "products.Product"},
-                ],
-            },
-            {
-                "label": "Orders",
-                "icon": "shopping-cart",
-                "items": [
-                    {"model": "orders.CartItem"},
-                    {"model": "orders.Order"},
-                    {"model": "orders.OrderItem"},
-                    {"model": "orders.Review"},
-                ],
-            },
-        ]
-    },
-}
-
-# ----------------------------------------------
-# Rest Framework
-#
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 25,
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
-}
