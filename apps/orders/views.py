@@ -1,5 +1,5 @@
 # Python modules
-from typing import Any
+from typing import Any, Optional, List
 
 # Django modules
 from rest_framework.viewsets import (
@@ -142,8 +142,12 @@ class ReviewAPIView(APIView):
         )
 
         query_params_serializer.is_valid(raise_exception=True)
-        username = query_params_serializer.validated_data.get("username")
-        limit = query_params_serializer.validated_data.get("limit")
+        username: Optional[str] = query_params_serializer.validated_data.get(
+            "username"
+        )
+        limit: Optional[int] = query_params_serializer.validated_data.get(
+            "limit"
+        )
 
         reviews: QuerySet[Review] = product.reviews.all()
         if username:
@@ -153,7 +157,9 @@ class ReviewAPIView(APIView):
 
         paginator: PageNumberPagination = self.pagination_class()
         paginator.page_size = limit
-        page = paginator.paginate_queryset(reviews, request=request)
+        page: Optional[List[Review]] = paginator.paginate_queryset(
+            reviews, request=request
+        )
 
         serializer: ReviewSerializer = ReviewSerializer(
             page,
@@ -453,7 +459,7 @@ class ReviewDetailAPIView(APIView):
             pk=pk,
         )
         self.check_object_permissions(request=request, obj=review)
-        review.delete()
+        review.soft_delete()
         return DRFResponse(
             status=HTTP_204_NO_CONTENT,
         )
@@ -543,8 +549,12 @@ class CartItemViewSet(ViewSet):
         )
 
         query_params_serializer.is_valid(raise_exception=True)
-        username = query_params_serializer.validated_data.get("username")
-        limit = query_params_serializer.validated_data.get("limit")
+        username: Optional[str] = query_params_serializer.validated_data.get(
+            "username"
+        )
+        limit: Optional[int] = query_params_serializer.validated_data.get(
+            "limit"
+        )
 
         if username:
             users: QuerySet[CustomUser] = (
@@ -560,7 +570,9 @@ class CartItemViewSet(ViewSet):
 
         paginator: PageNumberPagination = self.pagination_class()
         paginator.page_size = limit
-        page = paginator.paginate_queryset(users, request=request)
+        page: Optional[List[CartItem]] = paginator.paginate_queryset(
+            users, request=request
+        )
 
         serializer: CustomUserCartSerializer = CustomUserCartSerializer(
             page,
@@ -918,9 +930,11 @@ class OrderListView(ListAPIView):
 
     def get_queryset(self) -> QuerySet[Order]:
         """Get a list of user's orders."""
-        user = get_object_or_404(CustomUser, pk=self.kwargs.get("user_id"))
+        user: CustomUser = get_object_or_404(
+            CustomUser, pk=self.kwargs.get("user_id")
+        )
 
-        user_orders = (
+        user_orders: QuerySet[Order] = (
             Order.objects
             .filter(user=user)
             .prefetch_related("order_items")
@@ -1047,10 +1061,10 @@ class OrderCreateView(APIView):
         """
 
         with transaction.atomic():
-            user = request.user
-            cart_items = CartItem.objects.filter(user=user).select_related(
-                "store_product"
-            )
+            user: CustomUser = request.user
+            cart_items: QuerySet[CartItem] = CartItem.objects.filter(
+                user=user
+            ).select_related("store_product")
 
             if not cart_items.exists():
                 return DRFResponse(

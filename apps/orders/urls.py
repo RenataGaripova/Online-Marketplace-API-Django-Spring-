@@ -11,10 +11,13 @@ from .views import (
     OrderCreateView,
 )
 
-v1_router = DefaultRouter()
-carts_list = CartItemViewSet.as_view({"get": "list", "post": "create"})
-users_cart = CartItemViewSet.as_view({"get": "retrieve"})
-cart_item_update = CartItemViewSet.as_view({
+v1_router: DefaultRouter = DefaultRouter()
+carts_list: CartItemViewSet = CartItemViewSet.as_view({
+    "get": "list",
+    "post": "create",
+})
+users_cart: CartItemViewSet = CartItemViewSet.as_view({"get": "retrieve"})
+cart_item_update: CartItemViewSet = CartItemViewSet.as_view({
     "patch": "partial_update",
     "delete": "destroy",
 })

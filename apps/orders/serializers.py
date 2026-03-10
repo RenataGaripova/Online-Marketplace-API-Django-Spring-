@@ -1,5 +1,5 @@
 # Python modules
-from typing import Any
+from typing import Any, Type
 
 # Django modules
 from rest_framework.serializers import (
@@ -34,24 +34,24 @@ class ReviewCreate400Serializer(Serializer):
     Serializer for Review create 400 responses (validation errors).
     """
 
-    product = ListField(child=CharField(), required=False)
-    rate = ListField(child=CharField(), required=False)
-    text = ListField(child=CharField(), required=False)
+    product: ListField = ListField(child=CharField(), required=False)
+    rate: ListField = ListField(child=CharField(), required=False)
+    text: ListField = ListField(child=CharField(), required=False)
 
     class Meta:
-        fields = ("product", "rate", "text")
+        fields: tuple[str, str] = ("product", "rate", "text")
 
 
 class ReviewSerializer(ModelSerializer):
     """Serializer for Review model."""
 
-    user = StringRelatedField()
+    user: StringRelatedField = StringRelatedField()
 
     class Meta:
         """Metadata."""
 
-        model = Review
-        fields = [
+        model: Type[Review] = Review
+        fields: tuple[str, str] = [
             "id",
             "user",
             "product",
@@ -61,7 +61,7 @@ class ReviewSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         ]
-        read_only_fields = [
+        read_only_fields: tuple[str, str] = [
             "id",
             "user",
             "product",
@@ -74,11 +74,11 @@ class ReviewSerializer(ModelSerializer):
 class UsernameLimit(Serializer):
     """Serializer for query parameters."""
 
-    username = CharField(
+    username: CharField = CharField(
         required=False,
         allow_blank=True,
     )
-    limit = IntegerField(
+    limit: IntegerField = IntegerField(
         required=False,
         min_value=1,
         max_value=25,
@@ -96,11 +96,11 @@ class CartItemRetrieve404Serializer(Serializer):
     Serializer for CartItem retrieve 404 responses (cart/user not found).
     """
 
-    pk = ListField(child=CharField(), required=False)
-    detail = CharField(required=False)
+    pk: ListField = ListField(child=CharField(), required=False)
+    detail: CharField = CharField(required=False)
 
     class Meta:
-        fields = ("pk", "detail")
+        fields: tuple[str, str] = ("pk", "detail")
 
 
 class CartItemCreate400Serializer(Serializer):
@@ -108,13 +108,18 @@ class CartItemCreate400Serializer(Serializer):
     Serializer for CartItem create 400 responses.
     """
 
-    product = ListField(child=CharField(), required=False)
-    products = ListField(child=CharField(), required=False)
-    store_product = ListField(child=CharField(), required=False)
-    quantity = ListField(child=CharField(), required=False)
+    product: ListField = ListField(child=CharField(), required=False)
+    products: ListField = ListField(child=CharField(), required=False)
+    store_product: ListField = ListField(child=CharField(), required=False)
+    quantity: ListField = ListField(child=CharField(), required=False)
 
     class Meta:
-        fields = ("product", "products", "store_product", "quantity")
+        fields: tuple[str, str] = (
+            "product",
+            "products",
+            "store_product",
+            "quantity",
+        )
 
 
 class CartItemUpdateDestroy404Serializer(Serializer):
@@ -122,16 +127,16 @@ class CartItemUpdateDestroy404Serializer(Serializer):
     Serializer for partial_update 404 responses (CartItem not found).
     """
 
-    pk = ListField(child=CharField())
+    pk: ListField = ListField(child=CharField())
 
     class Meta:
-        fields = ("pk",)
+        fields: tuple[str, str] = ("pk",)
 
 
 class CartItemBaseSerializer(ModelSerializer):
     """Serializer for CartItem model."""
 
-    total_product_price = SerializerMethodField(
+    total_product_price: SerializerMethodField = SerializerMethodField(
         method_name="get_total_product_price"
     )
 
@@ -139,7 +144,7 @@ class CartItemBaseSerializer(ModelSerializer):
         """Metadata."""
 
         model = CartItem
-        fields = (
+        fields: tuple[str, str] = (
             "id",
             "store_product",
             "quantity",
@@ -148,7 +153,7 @@ class CartItemBaseSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields = [
+        read_only_fields: tuple[str, str] = [
             "id",
             "created_at",
             "updated_at",
@@ -164,12 +169,12 @@ class CartItemBaseSerializer(ModelSerializer):
 class CartItemRetrieveSerializer(Serializer):
     """Serializer for retrieving cart items with user and total price."""
 
-    MAX_PRICE_DIGITS = 10
-    MAX_DECIMAL_PLACES = 2
+    MAX_PRICE_DIGITS: int = 10
+    MAX_DECIMAL_PLACES: int = 2
 
-    user = CharField()
-    cart_items = CartItemBaseSerializer(many=True)
-    total = DecimalField(
+    user: CharField = CharField()
+    cart_items: CartItemBaseSerializer = CartItemBaseSerializer(many=True)
+    total: DecimalField = DecimalField(
         max_digits=MAX_PRICE_DIGITS, decimal_places=MAX_DECIMAL_PLACES
     )
 
@@ -178,13 +183,13 @@ class CartItemCreateSerializer(CartItemBaseSerializer):
     """Serializer for CartItem model.
     Handles the creation of new cart item."""
 
-    user = StringRelatedField()
+    user: StringRelatedField = StringRelatedField()
 
     class Meta:
         """Metadata."""
 
-        model = CartItem
-        fields = (
+        model: Type[CartItem] = CartItem
+        fields: tuple[str, str] = (
             "id",
             "user",
             "store_product",
@@ -194,7 +199,7 @@ class CartItemCreateSerializer(CartItemBaseSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields = [
+        read_only_fields: tuple[str, str] = [
             "user",
             "id",
             "created_at",
@@ -209,13 +214,13 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
     Handles the partial update of a cart item.
     """
 
-    user = StringRelatedField()
+    user: StringRelatedField = StringRelatedField()
 
     class Meta:
         """Metadata."""
 
-        model = CartItem
-        fields = (
+        model: Type[CartItem] = CartItem
+        fields: tuple[str, str] = (
             "id",
             "user",
             "store_product",
@@ -225,7 +230,7 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields = [
+        read_only_fields: tuple[str, str] = [
             "id",
             "user",
             "store_product",
@@ -236,14 +241,14 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
 
 
 class CustomUserCartSerializer(ModelSerializer):
-    cart_items = CartItemBaseSerializer(many=True)
-    total_positions = IntegerField()
+    cart_items: CartItemBaseSerializer = CartItemBaseSerializer(many=True)
+    total_positions: IntegerField = IntegerField()
 
     class Meta:
         """Metadata."""
 
-        model = CustomUser
-        fields = (
+        model: Type[CustomUser] = CustomUser
+        fields: tuple[str, str] = (
             "id",
             "email",
             "total_positions",
@@ -262,8 +267,8 @@ class OrderCreateOKSerializer(ModelSerializer):
     class Meta:
         """Metadata."""
 
-        model = Order
-        fields = (
+        model: Type[Order] = Order
+        fields: CartItemBaseSerializer = (
             "phone_number",
             "delivery_address",
         )
@@ -274,10 +279,10 @@ class OrderCreate400Serializer(Serializer):
     Serializer for unsuccessful order creation responses.
     """
 
-    cart_items = ListField(child=CharField())
+    cart_items: ListField = ListField(child=CharField())
 
     class Meta:
-        fields = ("cart_items",)
+        fields: CartItemBaseSerializer = ("cart_items",)
 
 
 class OrderCreate404Serializer(Serializer):
@@ -285,11 +290,11 @@ class OrderCreate404Serializer(Serializer):
     Serializer for unsuccessful order creation responses.
     """
 
-    phone_number = ListField(
+    phone_number: ListField = ListField(
         child=CharField(),
         required=False,
     )
-    delivery_address = ListField(
+    delivery_address: ListField = ListField(
         child=CharField(),
         required=False,
     )
@@ -297,7 +302,7 @@ class OrderCreate404Serializer(Serializer):
     class Meta:
         """Customization of the Serializer metadata."""
 
-        fields = (
+        fields: tuple[str, str] = (
             "phone_number",
             "delivery_address",
         )
@@ -306,15 +311,15 @@ class OrderCreate404Serializer(Serializer):
 class OrderItemBaseSerializer(ModelSerializer):
     """Order Item Base Serializer."""
 
-    total_product_price = SerializerMethodField(
+    total_product_price: SerializerMethodField = SerializerMethodField(
         method_name="get_total_product_price"
     )
 
     class Meta:
         """Metadata."""
 
-        model = OrderItem
-        fields = (
+        model: Type[OrderItem] = OrderItem
+        fields: tuple[str, str] = (
             "id",
             "store_product",
             "name",
@@ -332,13 +337,13 @@ class OrderItemBaseSerializer(ModelSerializer):
 class OrderListCreateSerializer(ModelSerializer):
     """Serializer for list of orders."""
 
-    MAX_PRICE_DIGITS = 10
-    MAX_DECIMAL_PLACES = 2
+    MAX_PRICE_DIGITS: int = 10
+    MAX_DECIMAL_PLACES: int = 2
 
-    user = StringRelatedField()
-    order_items = OrderItemBaseSerializer(many=True)
-    total_positions = IntegerField(read_only=True)
-    total_price = DecimalField(
+    user: StringRelatedField = StringRelatedField()
+    order_items: OrderItemBaseSerializer = OrderItemBaseSerializer(many=True)
+    total_positions: IntegerField = IntegerField(read_only=True)
+    total_price: DecimalField = DecimalField(
         max_digits=MAX_PRICE_DIGITS,
         decimal_places=MAX_DECIMAL_PLACES,
         read_only=True,
@@ -347,8 +352,8 @@ class OrderListCreateSerializer(ModelSerializer):
     class Meta:
         """Metadata."""
 
-        model = Order
-        fields = (
+        model: Type[Order] = Order
+        fields: tuple[str, str] = (
             "id",
             "user",
             "phone_number",
@@ -361,7 +366,7 @@ class OrderListCreateSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields = [
+        read_only_fields: tuple[str, str] = [
             "status",
             "created_at",
             "updated_at",

@@ -47,7 +47,7 @@ class RefreshSerializer(Serializer):
 class ErrorDetailSerializer(Serializer):
     """Serializer for showing detail's of request's errors."""
 
-    detail = CharField()
+    detail: CharField = CharField()
 
     class Meta:
-        fields = ("detail",)
+        fields: tuple[str, str] = ("detail",)

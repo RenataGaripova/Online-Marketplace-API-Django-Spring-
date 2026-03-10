@@ -4,21 +4,35 @@ from typing import Any
 # Django modules
 from django.db.models import (
     Model,
-    DateTimeField
+    DateTimeField,
+    QuerySet,
+    Manager,
 )
 from django.utils import timezone as django_timezone
+
+
+class SoftDeleteManager(Manager):
+    """Manager that excludes soft-deleted objects."""
+
+    def get_queryset(self) -> QuerySet:
+        """Return queryset excluding soft-deleted objects."""
+        return super().get_queryset().filter(deleted_at__isnull=True)
 
 
 class AbstractBaseModel(Model):
     """Abstract Base Model with common fields."""
 
-    created_at = DateTimeField(auto_now_add=True, verbose_name="Created at")
-    updated_at = DateTimeField(auto_now=True, verbose_name="Updated at")
-    deleted_at = DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="Deleted at"
+    created_at: DateTimeField = DateTimeField(
+        auto_now_add=True, verbose_name="Created at"
     )
+    updated_at: DateTimeField = DateTimeField(
+        auto_now=True, verbose_name="Updated at"
+    )
+    deleted_at: DateTimeField = DateTimeField(
+        null=True, blank=True, verbose_name="Deleted at"
+    )
+    objects: Manager = SoftDeleteManager()
+    all_objects: Manager = Manager()
 
     class Meta:
         """Meta class."""
@@ -26,8 +40,7 @@ class AbstractBaseModel(Model):
         abstract = True
 
     def soft_delete(
-        self, *args: tuple[Any, ...],
-        **kwargs: dict[Any, Any]
+        self, *args: tuple[Any, ...], **kwargs: dict[Any, Any]
     ) -> None:
         """Soft delete the model's object."""
         self.deleted_at = django_timezone.now()

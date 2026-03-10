@@ -8,13 +8,10 @@ from typing import Any
 class IsOwnerOrReadOnly(BasePermission):
     """Permission class that allows only owners to modify their content."""
 
-    message = "Only owner can modify his content."
+    message: str = "Only owner can modify his content."
 
     def has_object_permission(
-        self,
-        request: Request,
-        view: APIView,
-        obj: Any
+        self, request: Request, view: APIView, obj: Any
     ) -> bool:
         """Check if user has permission to access the object."""
         if request.method in SAFE_METHODS:

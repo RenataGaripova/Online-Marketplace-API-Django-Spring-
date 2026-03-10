@@ -1,5 +1,5 @@
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.db.models import EmailField, CharField, BooleanField
 
 
 class CustomUser(AbstractUser):
@@ -7,16 +7,16 @@ class CustomUser(AbstractUser):
     CustomUser database (table) model.
     """
 
-    MAX_PHONE_LENGTH = 20
-    MAX_EMAIL_LENGTH = 20
-    MAX_ADDRESS_LENGTH = 255
+    MAX_PHONE_LENGTH: int = 20
+    MAX_EMAIL_LENGTH: int = 20
+    MAX_ADDRESS_LENGTH: int = 255
 
-    email = models.EmailField(unique=True, max_length=MAX_EMAIL_LENGTH)
-    phone = models.CharField(
+    email: EmailField = EmailField(unique=True, max_length=MAX_EMAIL_LENGTH)
+    phone: CharField = CharField(
         max_length=MAX_PHONE_LENGTH, blank=True, null=True
     )
-    is_seller = models.BooleanField(default=False)
-    address = models.CharField(
+    is_seller: BooleanField = BooleanField(default=False)
+    address: CharField = CharField(
         max_length=MAX_ADDRESS_LENGTH, blank=True, null=True
     )
 
