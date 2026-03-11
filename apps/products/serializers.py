@@ -41,7 +41,7 @@ class CategoryWithProductsSerializer(ModelSerializer):
         """Metadata."""
 
         model: Type[Category] = Category
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "name",
             "description",
             "products",

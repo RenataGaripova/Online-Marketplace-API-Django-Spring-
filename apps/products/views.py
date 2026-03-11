@@ -16,6 +16,7 @@ from rest_framework.status import (
     HTTP_405_METHOD_NOT_ALLOWED,
     HTTP_429_TOO_MANY_REQUESTS,
 )
+from rest_framework.decorators import action
 from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
@@ -30,7 +31,7 @@ from .serializers import (
     CategoryBaseSerializer,
     CategoryWithProductsSerializer,
 )
-from .models import Category
+from .models import Category, Product
 from apps.abstracts.serializers import ErrorDetailSerializer
 
 
@@ -233,29 +234,225 @@ class CategoryViewSet(ViewSet):
     ),
 )
 class ProductViewSet(ViewSet):
-    def list():
-        pass
+    @extend_schema(
+        tags=["products"],
+        summary="List products",
+        description=(
+            "Retrieve a list of products. "
+            "Supports filtering by category "
+            "and searching by name or description."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="category",
+                type=int,
+                description="Filter products by category ID.",
+                required=False,
+            ),
+            OpenApiParameter(
+                name="search",
+                type=str,
+                description="Search products by name or description.",
+                required=False,
+            ),
+        ],
+        responses={
+            HTTP_200_OK: ProductSerializer(many=True),
+            HTTP_429_TOO_MANY_REQUESTS: OpenApiResponse(
+                description="Too many requests",
+                response=ErrorDetailSerializer,
+            ),
+        },
+    )
+    @action(
+        methods=("get",),
+        detail=False,
+        url_path="list",
+    )
+    def list_products(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
 
-    def retrieve():
-        pass
+        products: QuerySet = Product.objects.all()
 
+        category_id: Optional[str] = request.query_params.get("category")
+        if category_id:
+            products = products.filter(category_id=category_id)
 
-# class ProductViewSet(viewsets.ModelViewSet):
-#     """
-#     Handles all types of requests related to products model.
-#     """
-#     queryset = Product.objects.all()
-#     serializer_class = ProductSerializer
-#     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-#     filterset_fields = ['category']
-#     search_fields = ['name', 'description']
+        search: Optional[str] = request.query_params.get("search")
+        if search:
+            products = products.filter(
+                name__icontains=search
+            ) | products.filter(description__icontains=search)
 
-#     def get_permissions(self) -> list:
-#         """Return appropriate permissions based on the action."""
-#         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-#             return [permissions.IsAuthenticated()]
-#         return [permissions.AllowAny()]
+        serializer: ProductSerializer = ProductSerializer(
+            products,
+            many=True,
+        )
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK,
+        )
 
-#     def perform_create(self, serializer) -> None:
-#         """Save the product with the current user as seller."""
-#         serializer.save(seller=self.request.user)
+    @extend_schema(
+        tags=["products"],
+        summary="Retrieve a product",
+        description="Retrieve a single product by its ID.",
+        responses={
+            HTTP_200_OK: ProductSerializer,
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Product not found.",
+                response=ErrorDetailSerializer,
+            ),
+        },
+    )
+    @action(
+        methods=("get",),
+        detail=True,
+        url_path="retrieve",
+    )
+    def retrieve_product(
+        self,
+        request: DRFRequest,
+        pk: int = None,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+
+        product = Product.objects.filter(pk=pk).first()
+        if not product:
+            return DRFResponse(
+                {"detail": "Not found"},
+                status=HTTP_404_NOT_FOUND,
+            )
+        serializer: ProductSerializer = ProductSerializer(product)
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK,
+        )
+
+    @extend_schema(
+        tags=["products"],
+        summary="Create a product",
+        description="Create a new product. Authentication is required.",
+        request=ProductSerializer,
+        responses={
+            201: ProductSerializer,
+            HTTP_405_METHOD_NOT_ALLOWED: OpenApiResponse(
+                description="Access forbidden.",
+                response=ErrorDetailSerializer,
+            ),
+        },
+    )
+    @action(
+        methods=("post",),
+        detail=False,
+        url_path="create",
+    )
+    def create_product(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+
+        serializer: ProductSerializer = ProductSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return DRFResponse(
+            data=serializer.data,
+            status=201,
+        )
+
+    @extend_schema(
+        tags=["products"],
+        summary="Update a product",
+        description=(
+            "Partially update a product by its ID. Authentication is required."
+        ),
+        request=ProductSerializer,
+        responses={
+            HTTP_200_OK: ProductSerializer,
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Product not found.",
+                response=ErrorDetailSerializer,
+            ),
+        },
+    )
+    @action(
+        methods=("patch",),
+        detail=True,
+        url_path="update",
+    )
+    def update_product(
+        self,
+        request: DRFRequest,
+        pk: int = None,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+
+        product = Product.objects.filter(pk=pk).first()
+        if not product:
+            return DRFResponse(
+                {"detail": "Not found"},
+                status=HTTP_404_NOT_FOUND,
+            )
+        serializer: ProductSerializer = ProductSerializer(
+            product,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK,
+        )
+
+    @extend_schema(
+        tags=["products"],
+        summary="Delete a product",
+        description=(
+            "Delete a product by its ID. Authentication is required."
+        ),
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Product successfully deleted.",
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Product not found.",
+                response=ErrorDetailSerializer,
+            ),
+        },
+    )
+    @action(
+        methods=("delete",),
+        detail=True,
+        url_path="delete",
+    )
+    def delete_product(
+        self,
+        request: DRFRequest,
+        pk: int = None,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+
+        product = Product.objects.filter(pk=pk).first()
+        if not product:
+            return DRFResponse(
+                {"detail": "Not found"},
+                status=HTTP_404_NOT_FOUND,
+            )
+        product.delete()
+        return DRFResponse(
+            {"detail": "Deleted"},
+            status=HTTP_200_OK,
+        )

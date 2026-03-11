@@ -23,7 +23,7 @@ class ResponseUserRegistrationSerializer(Serializer):
     access: CharField = CharField()
 
     class Meta:
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "email",
             "username",
@@ -41,7 +41,7 @@ class RefreshSerializer(Serializer):
     refresh: CharField = CharField()
 
     class Meta:
-        fields: tuple[str, str] = ("refresh",)
+        fields: tuple[str, ...] = ("refresh",)
 
 
 class ErrorDetailSerializer(Serializer):
@@ -50,4 +50,4 @@ class ErrorDetailSerializer(Serializer):
     detail: CharField = CharField()
 
     class Meta:
-        fields: tuple[str, str] = ("detail",)
+        fields: tuple[str, ...] = ("detail",)

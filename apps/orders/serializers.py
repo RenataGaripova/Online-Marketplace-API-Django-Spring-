@@ -39,7 +39,7 @@ class ReviewCreate400Serializer(Serializer):
     text: ListField = ListField(child=CharField(), required=False)
 
     class Meta:
-        fields: tuple[str, str] = ("product", "rate", "text")
+        fields: tuple[str, ...] = ("product", "rate", "text")
 
 
 class ReviewSerializer(ModelSerializer):
@@ -51,7 +51,7 @@ class ReviewSerializer(ModelSerializer):
         """Metadata."""
 
         model: Type[Review] = Review
-        fields: tuple[str, str] = [
+        fields: tuple[str, ...] = [
             "id",
             "user",
             "product",
@@ -61,7 +61,7 @@ class ReviewSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         ]
-        read_only_fields: tuple[str, str] = [
+        read_only_fields: tuple[str, ...] = [
             "id",
             "user",
             "product",
@@ -114,7 +114,7 @@ class CartItemCreate400Serializer(Serializer):
     quantity: ListField = ListField(child=CharField(), required=False)
 
     class Meta:
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "product",
             "products",
             "store_product",
@@ -130,7 +130,7 @@ class CartItemUpdateDestroy404Serializer(Serializer):
     pk: ListField = ListField(child=CharField())
 
     class Meta:
-        fields: tuple[str, str] = ("pk",)
+        fields: tuple[str, ...] = ("pk",)
 
 
 class CartItemBaseSerializer(ModelSerializer):
@@ -144,7 +144,7 @@ class CartItemBaseSerializer(ModelSerializer):
         """Metadata."""
 
         model = CartItem
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "store_product",
             "quantity",
@@ -153,7 +153,7 @@ class CartItemBaseSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields: tuple[str, str] = [
+        read_only_fields: tuple[str, ...] = [
             "id",
             "created_at",
             "updated_at",
@@ -189,7 +189,7 @@ class CartItemCreateSerializer(CartItemBaseSerializer):
         """Metadata."""
 
         model: Type[CartItem] = CartItem
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "user",
             "store_product",
@@ -199,7 +199,7 @@ class CartItemCreateSerializer(CartItemBaseSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields: tuple[str, str] = [
+        read_only_fields: tuple[str, ...] = [
             "user",
             "id",
             "created_at",
@@ -220,7 +220,7 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
         """Metadata."""
 
         model: Type[CartItem] = CartItem
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "user",
             "store_product",
@@ -230,7 +230,7 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields: tuple[str, str] = [
+        read_only_fields: tuple[str, ...] = [
             "id",
             "user",
             "store_product",
@@ -248,7 +248,7 @@ class CustomUserCartSerializer(ModelSerializer):
         """Metadata."""
 
         model: Type[CustomUser] = CustomUser
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "email",
             "total_positions",
@@ -302,7 +302,7 @@ class OrderCreate404Serializer(Serializer):
     class Meta:
         """Customization of the Serializer metadata."""
 
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "phone_number",
             "delivery_address",
         )
@@ -319,7 +319,7 @@ class OrderItemBaseSerializer(ModelSerializer):
         """Metadata."""
 
         model: Type[OrderItem] = OrderItem
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "store_product",
             "name",
@@ -353,7 +353,7 @@ class OrderListCreateSerializer(ModelSerializer):
         """Metadata."""
 
         model: Type[Order] = Order
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "user",
             "phone_number",
@@ -366,7 +366,7 @@ class OrderListCreateSerializer(ModelSerializer):
             "updated_at",
             "deleted_at",
         )
-        read_only_fields: tuple[str, str] = [
+        read_only_fields: tuple[str, ...] = [
             "status",
             "created_at",
             "updated_at",

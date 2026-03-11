@@ -5,10 +5,11 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 from rest_framework.routers import DefaultRouter
-from .views import CustomUserViewSet
+from .views import CustomUserViewSet, AddressViewSet
 
 v1_router: DefaultRouter = DefaultRouter()
 v1_router.register("auths", CustomUserViewSet, basename="auths")
+v1_router.register("addresses", AddressViewSet, basename="addresses")
 
 urlpatterns = [
     path("", include(v1_router.urls)),

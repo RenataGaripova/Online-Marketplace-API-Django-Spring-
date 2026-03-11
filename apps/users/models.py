@@ -1,5 +1,13 @@
 from django.contrib.auth.models import AbstractUser
-from django.db.models import EmailField, CharField, BooleanField
+from django.db.models import (
+    EmailField,
+    CharField,
+    BooleanField,
+    ForeignKey,
+    CASCADE,
+)
+
+from apps.abstracts.models import AbstractBaseModel
 
 
 class CustomUser(AbstractUser):
@@ -26,3 +34,19 @@ class CustomUser(AbstractUser):
     def __str__(self) -> str:
         """Returns the string representation of the object."""
         return self.email
+
+
+class Address(AbstractBaseModel):
+    """Adress model."""
+
+    user: ForeignKey = ForeignKey(
+        "users.CustomUser", on_delete=CASCADE, related_name="addresses"
+    )
+    city: CharField = CharField(max_length=100)
+    street: CharField = CharField(max_length=100)
+    zip_code: CharField = CharField(max_length=10)
+    is_default: CharField = BooleanField(default=False)
+
+    def __str__(self) -> str:
+        """Returns the string representation of the object."""
+        return f"{self.city}, {self.street}"

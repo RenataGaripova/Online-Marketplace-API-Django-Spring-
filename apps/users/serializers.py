@@ -1,5 +1,5 @@
 # Python modules
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 # Django modules
 from django.contrib.auth.password_validation import validate_password
@@ -14,13 +14,24 @@ from rest_framework.serializers import (
 )
 
 # Project modules
-from .models import CustomUser
+from .models import CustomUser, Address
+
+
+class AddressSerializer(ModelSerializer):
+    class Meta:
+        model: Type[Address] = Address
+        fields: str = "__all__"
+        read_only_fields: tuple[str, ...] = ("user",)
+
+    def create(self, validated_data: dict[str, Any]) -> Any:
+        validated_data["user"] = self.context["request"].user
+        return super().create(validated_data)
 
 
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model: CustomUser = CustomUser
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "email",
             "username",
@@ -40,7 +51,7 @@ class UserRegistrationSerializer(ModelSerializer):
 
     class Meta:
         model: CustomUser = CustomUser
-        fields: tuple[str, str] = (
+        fields: tuple[str, ...] = (
             "id",
             "email",
             "username",
@@ -50,7 +61,7 @@ class UserRegistrationSerializer(ModelSerializer):
             "password2",
             "date_joined",
         )
-        read_only_fields = (
+        read_only_fields: tuple[str, str] = (
             "id",
             "date_joined",
         )

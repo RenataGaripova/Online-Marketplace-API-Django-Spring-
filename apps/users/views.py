@@ -19,11 +19,12 @@ from drf_spectacular.utils import (
     OpenApiResponse,
 )
 
-from .models import CustomUser
+from .models import CustomUser, Address
 from .serializers import (
     BaseUserSerializer,
     UserRegistrationSerializer,
     UserLoginSerializer,
+    AddressSerializer,
 )
 from apps.abstracts.serializers import (
     RefreshSerializer,
@@ -236,3 +237,112 @@ class CustomUserViewSet(ViewSet):
                 data={"detail": f"Invalid refresh token. Error message: {e}"},
                 status=HTTP_400_BAD_REQUEST,
             )
+
+
+class AddressViewSet(ViewSet):
+    """Viewset for handling address-related endpoints."""
+
+    @action(
+        methods=("get",),
+        detail=False,
+        url_path="list",
+    )
+    def list_addresses(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+        serializer = AddressSerializer(
+            Address.objects.filter(user=request.user),
+            many=True,
+        )
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK,
+        )
+
+    @action(
+        methods=("post",),
+        detail=False,
+        url_path="create",
+    )
+    def create_address(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+        serializer = AddressSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_201_CREATED,
+        )
+
+    @action(
+        methods=("patch",),
+        detail=True,
+        url_path="update",
+    )
+    def update_address(
+        self,
+        request: DRFRequest,
+        pk: int = None,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+        address = Address.objects.filter(
+            pk=pk,
+            user=request.user,
+        ).first()
+        if not address:
+            return DRFResponse(
+                {"datail": "Not found"},
+                status=HTTP_404_NOT_FOUND,
+            )
+        serializer = AddressSerializer(
+            address,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK,
+        )
+
+    @action(
+        methods=("delete",),
+        detail=False,
+        url_path="delete",
+    )
+    def delete_address(
+        self,
+        request: DRFRequest,
+        pk=None,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+        address = Address.objects.filter(
+            pk=pk,
+            user=request.user,
+        ).first()
+        if not address:
+            return DRFResponse(
+                {"datail": "Not found"},
+                status=HTTP_404_NOT_FOUND,
+            )
+        address.delete()
+
+        return DRFResponse(
+            {"detail": "Deleted"},
+            status=HTTP_200_OK,
+        )
