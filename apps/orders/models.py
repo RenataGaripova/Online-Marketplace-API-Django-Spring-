@@ -86,10 +86,6 @@ class CartItem(AbstractBaseModel):
         """Magic method."""
         return f"{self.user.username}'s cart"
 
-    def delete(self, *args, **kwargs):
-        """Override delete to perform soft delete."""
-        self.soft_delete()
-
 
 class Order(AbstractBaseModel):
     """
@@ -169,10 +165,6 @@ class Order(AbstractBaseModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete."""
-        self.soft_delete()
-
 
 class OrderItem(AbstractBaseModel):
     """
@@ -217,10 +209,6 @@ class OrderItem(AbstractBaseModel):
     def __str__(self) -> str:
         """Magic str method."""
         return f"Order Item from order: {self.order.id}"
-
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete."""
-        self.soft_delete()
 
 
 class Review(AbstractBaseModel):
@@ -270,7 +258,3 @@ class Review(AbstractBaseModel):
         """Override save to call full_clean."""
         self.full_clean()
         super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete."""
-        self.soft_delete()

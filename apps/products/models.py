@@ -32,6 +32,11 @@ class Category(AbstractBaseModel):
     name: CharField = CharField(max_length=MAX_NAME_LENGTH, unique=True)
     description: TextField = TextField(blank=True, null=True)
 
+    class Meta:
+        """Meta class."""
+
+        verbose_name_plural = "Categories"
+
     def __str__(self) -> str:
         """Returns the string representation of the object."""
         return self.name
@@ -48,13 +53,6 @@ class Category(AbstractBaseModel):
         """Override save to call full_clean."""
         self.full_clean()
         super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete and cascade to products."""
-        # Soft delete all related products first
-        for product in self.products.all():
-            product.soft_delete()
-        self.soft_delete()
 
 
 # PRODUCT
@@ -109,10 +107,6 @@ class StoreProductRelation(AbstractBaseModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete."""
-        self.soft_delete()
-
 
 class Product(AbstractBaseModel):
     """
@@ -154,14 +148,6 @@ class Product(AbstractBaseModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete
-        and cascade to store relations."""
-        # Soft delete all related store product relations first
-        for relation in StoreProductRelation.objects.filter(product=self):
-            relation.soft_delete()
-        self.soft_delete()
-
 
 # STORE
 
@@ -199,11 +185,3 @@ class Store(AbstractBaseModel):
     def __str__(self) -> str:
         """Magic str method."""
         return self.name
-
-    def delete(self, *args, **kwargs) -> None:
-        """Override delete to perform soft delete and
-        cascade to store relations."""
-        # Soft delete all related store product relations first
-        for relation in StoreProductRelation.objects.filter(store=self):
-            relation.soft_delete()
-        self.soft_delete()

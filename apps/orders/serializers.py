@@ -1,7 +1,7 @@
 # Python modules
 from typing import Any, Type
 
-# Django modules
+# DRF modules
 from rest_framework.serializers import (
     ModelSerializer,
     StringRelatedField,
@@ -11,7 +11,12 @@ from rest_framework.serializers import (
     Serializer,
     ListField,
     CharField,
+    ValidationError,
 )
+
+# Django modules
+from django.db.models import QuerySet
+from django.db import transaction
 
 # Project modules
 from .models import (
@@ -23,6 +28,7 @@ from .models import (
 from apps.users.models import (
     CustomUser,
 )
+from apps.products.models import StoreProductRelation
 
 # ----------------------------------------------
 # REVIEWS
@@ -207,6 +213,48 @@ class CartItemCreateSerializer(CartItemBaseSerializer):
             "deleted_at",
         ]
 
+    def create(self, validated_data: dict[str, Any]) -> CartItem:
+        """Creates a new cart item or updates exisiting (if product is in cart already)."""
+        store_product: StoreProductRelation = validated_data.get(
+            "store_product"
+        )
+        user: CustomUser = self.context.get("user")
+        quantity: int = validated_data.get("quantity")
+
+        with transaction.atomic():
+            existing_cartitem: QuerySet[CartItem] = (
+                CartItem.objects
+                .select_for_update()
+                .filter(
+                    user=user,
+                    store_product=store_product,
+                )
+                .first()
+            )
+
+            final_quantity: int = quantity
+
+            if existing_cartitem:
+                final_quantity += existing_cartitem.quantity
+
+            if final_quantity > store_product.quantity:
+                raise ValidationError(
+                    {
+                        "quantity": [
+                            f"Only {store_product.quantity} items are in stock."
+                        ],
+                    },
+                )
+
+            if existing_cartitem:
+                existing_cartitem.quantity = final_quantity
+                existing_cartitem.save(
+                    update_fields=["quantity", "updated_at"]
+                )
+                return existing_cartitem
+
+            return CartItem.objects.create(user=user, **validated_data)
+
 
 class CartItemUpdateSerializer(CartItemBaseSerializer):
     """
@@ -238,6 +286,27 @@ class CartItemUpdateSerializer(CartItemBaseSerializer):
             "updated_at",
             "deleted_at",
         ]
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Validates data."""
+
+        attrs = super().validate(attrs)
+        instance: CartItem = self.instance
+        store_product: StoreProductRelation = instance.store_product
+        quantity: int = attrs.get("quantity")
+
+        final_quantity: int = instance.quantity + quantity
+
+        if final_quantity > store_product.quantity:
+            raise ValidationError(
+                {
+                    "quantity": [
+                        f"Only {store_product.quantity} items are in stock."
+                    ],
+                },
+            )
+
+        return attrs
 
 
 class CustomUserCartSerializer(ModelSerializer):

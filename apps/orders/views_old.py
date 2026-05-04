@@ -459,7 +459,7 @@ class ReviewDetailAPIView(APIView):
             pk=pk,
         )
         self.check_object_permissions(request=request, obj=review)
-        review.soft_delete()
+        review.delete()
         return DRFResponse(
             status=HTTP_204_NO_CONTENT,
         )
