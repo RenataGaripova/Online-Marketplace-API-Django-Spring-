@@ -1,6 +1,8 @@
+# Python modules
+import logging
 from typing import Any
 
-
+# DRF modules
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from rest_framework.request import Request as DRFRequest
@@ -18,9 +20,15 @@ from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
 )
+from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.exceptions import TokenError
 
-from .models import CustomUser, Address
-from .serializers import (
+# Django modules
+from django.db import DatabaseError
+
+# Project modules
+from apps.users.models import CustomUser, Address
+from apps.users.serializers import (
     BaseUserSerializer,
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -31,6 +39,8 @@ from apps.abstracts.serializers import (
     ErrorDetailSerializer,
     ResponseUserRegistrationSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CustomUserViewSet(ViewSet):
@@ -84,16 +94,40 @@ class CustomUserViewSet(ViewSet):
             DRFResponse -
                 A response containing data about created CustomUser and token data.
         """
-        serializer: UserRegistrationSerializer = UserRegistrationSerializer(
-            data=request.data
+        logger.info(
+            "Registration attempt for email: %s", request.data.get("email")
         )
-        serializer.is_valid(raise_exception=True)
-        user: CustomUser = serializer.save()
+        try:
+            serializer: UserRegistrationSerializer = (
+                UserRegistrationSerializer(data=request.data)
+            )
+            serializer.is_valid(raise_exception=True)
+            user: CustomUser = serializer.save()
 
-        # Generate JWT tokens
-        refresh_token: RefreshToken = RefreshToken.for_user(user)
-        access_token: AccessToken = refresh_token.access_token
-
+            # Generate JWT tokens
+            refresh_token: RefreshToken = RefreshToken.for_user(user)
+            access_token: AccessToken = refresh_token.access_token
+        except ValidationError:
+            logger.exception(
+                "Registration for email %s failed with error: %s",
+                request.data.get("email"),
+                serializer.errors,
+            )
+            raise
+        except TokenError as e:
+            logger.exception(
+                "JWT generation for email %s failed with error: %s",
+                request.data.get("email"),
+                e,
+            )
+            raise
+        except DatabaseError as e:
+            logger.exception(
+                "Databse error occured during %s email's registration: %s",
+                request.data.get("email"),
+                e,
+            )
+            raise
         return DRFResponse(
             data={
                 **serializer.data,

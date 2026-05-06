@@ -1,4 +1,5 @@
 # Python modules
+import logging
 from typing import Any, Type
 
 # DRF modules
@@ -28,7 +29,7 @@ from drf_spectacular.utils import (
 
 # Django modules
 from django.db.models import QuerySet, Count, Sum, F
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 # Project modules
 from apps.orders.serializers import (
@@ -43,6 +44,9 @@ from apps.users.models import CustomUser
 from apps.orders.models import CartItem, Order, OrderItem
 from apps.abstracts.mixins import DRFResponseMixin
 from apps.abstracts.serializers import ErrorDetailSerializer
+
+
+logger = logging.getLogger(__name__)
 
 
 class OrderViewSet(DRFResponseMixin, ViewSet):
@@ -167,80 +171,90 @@ class OrderViewSet(DRFResponseMixin, ViewSet):
             DRFResponse -
                 A response containing info about a new order.
         """
-        with transaction.atomic():
-            user: CustomUser = request.user
-            cart_items: QuerySet[CartItem] = CartItem.objects.filter(
-                user=user
-            ).select_related("store_product")
-
-            if not cart_items.exists():
-                return DRFResponse(
-                    data={
-                        "detail": ["Your cart is empty."],
-                    },
-                    status=HTTP_400_BAD_REQUEST,
+        try:
+            with transaction.atomic():
+                user: CustomUser = request.user
+                cart_items: QuerySet[CartItem] = (
+                    CartItem.objects
+                    .filter(user=user)
+                    .select_related("store_product")
+                    .select_for_update()
                 )
 
-            request_serializer: OrderCreateOKSerializer = (
-                OrderCreateOKSerializer(data=request.data)
-            )
-            request_serializer.is_valid(raise_exception=True)
-
-            phone_number: str = request_serializer.data.get("phone_number")
-            delivery_address: str = request_serializer.data.get(
-                "delivery_address"
-            )
-            status: str = "P"
-
-            order: Order = Order.objects.create(
-                user=request.user,
-                phone_number=phone_number,
-                delivery_address=delivery_address,
-                status=status,
-            )
-
-            order_items: list[OrderItem] = []
-            total_price: float = 0
-            total_positions: int = 0
-
-            for item in cart_items:
-                store_product: StoreProductRelation = item.store_product
-
-                if store_product.quantity < item.quantity:
-                    continue
-
-                store_product: StoreProductRelation = item.store_product
-                name: str = store_product.product.name
-                price: float = store_product.price
-                quantity: int = item.quantity
-                total_price += round(price * quantity, 2)
-                total_positions += 1
-
-                order_items.append(
-                    OrderItem(
-                        order=order,
-                        store_product=store_product,
-                        name=name,
-                        price=price,
-                        quantity=quantity,
+                if not cart_items.exists():
+                    return DRFResponse(
+                        data={
+                            "detail": ["Your cart is empty."],
+                        },
+                        status=HTTP_400_BAD_REQUEST,
                     )
+
+                request_serializer: OrderCreateOKSerializer = (
+                    OrderCreateOKSerializer(data=request.data)
+                )
+                request_serializer.is_valid(raise_exception=True)
+
+                phone_number: str = request_serializer.data.get("phone_number")
+                delivery_address: str = request_serializer.data.get(
+                    "delivery_address"
+                )
+                status: str = "P"
+
+                order: Order = Order.objects.create(
+                    user=request.user,
+                    phone_number=phone_number,
+                    delivery_address=delivery_address,
+                    status=status,
                 )
 
-                store_product.quantity -= item.quantity
-                store_product.save()
+                order_items: list[OrderItem] = []
+                total_price: float = 0
+                total_positions: int = 0
 
-            OrderItem.objects.bulk_create(order_items)
-            cart_items.delete()
+                for item in cart_items:
+                    store_product: StoreProductRelation = item.store_product
 
-            serializer: OrderCreateSerializer = OrderCreateSerializer(
-                instance=order,
-                context={
-                    "total_price": total_price,
-                    "total_positions": total_positions,
-                },
-            )
+                    if store_product.quantity < item.quantity:
+                        continue
 
-            return DRFResponse(
-                data=serializer.data,
-                status=HTTP_201_CREATED,
+                    store_product: StoreProductRelation = item.store_product
+                    name: str = store_product.product.name
+                    price: float = store_product.price
+                    quantity: int = item.quantity
+                    total_price += round(price * quantity, 2)
+                    total_positions += 1
+
+                    order_items.append(
+                        OrderItem(
+                            order=order,
+                            store_product=store_product,
+                            name=name,
+                            price=price,
+                            quantity=quantity,
+                        )
+                    )
+
+                    store_product.quantity -= item.quantity
+                    store_product.save()
+
+                OrderItem.objects.bulk_create(order_items)
+                cart_items.delete()
+
+                serializer: OrderCreateSerializer = OrderCreateSerializer(
+                    instance=order,
+                    context={
+                        "total_price": total_price,
+                        "total_positions": total_positions,
+                    },
+                )
+
+                return DRFResponse(
+                    data=serializer.data,
+                    status=HTTP_201_CREATED,
+                )
+        except IntegrityError as e:
+            logger.exception(
+                "Order creation for user %s failed. Error: %s",
+                request.user.email,
+                e,
             )
