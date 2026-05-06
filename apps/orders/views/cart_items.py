@@ -96,7 +96,7 @@ class CartItemViewSet(DRFResponseMixin, ViewSet):
         detail=False,
         methods=("GET",),
         permission_classes=(IsAdminUser),
-        url_name="list_all_carts",
+        url_name="list-all-carts",
         url_path="list-all-carts",
     )
     def list_all_carts(
@@ -149,7 +149,7 @@ class CartItemViewSet(DRFResponseMixin, ViewSet):
             data=users,
             serializer_class=CustomUserCartSerializer,
             many=True,
-            paginator=PageNumberPagination,
+            paginator=self.pagination_class(),
             limit=limit,
         )
 

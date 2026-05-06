@@ -337,7 +337,7 @@ class OrderCreateOKSerializer(ModelSerializer):
         """Metadata."""
 
         model: Type[Order] = Order
-        fields: CartItemBaseSerializer = (
+        fields: tuple[str, str] = (
             "phone_number",
             "delivery_address",
         )
@@ -403,8 +403,8 @@ class OrderItemBaseSerializer(ModelSerializer):
         return round(obj.price * obj.quantity, 2)
 
 
-class OrderListCreateSerializer(ModelSerializer):
-    """Serializer for list of orders."""
+class OrderBaseSerializer(ModelSerializer):
+    """Base serializer for Order model."""
 
     MAX_PRICE_DIGITS: int = 10
     MAX_DECIMAL_PLACES: int = 2
@@ -437,10 +437,21 @@ class OrderListCreateSerializer(ModelSerializer):
         )
         read_only_fields: tuple[str, ...] = [
             "status",
+            "user",
             "created_at",
             "updated_at",
             "deleted_at",
         ]
+
+
+class OrderReadSerializer(OrderBaseSerializer):
+    """Serializer for reading orders."""
+
+    pass
+
+
+class OrderCreateSerializer(OrderBaseSerializer):
+    """Serializer for orders creation."""
 
     def to_representation(self, instance):
         data: dict[Any, Any] = super().to_representation(instance)

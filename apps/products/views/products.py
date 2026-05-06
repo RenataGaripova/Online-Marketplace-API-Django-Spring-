@@ -45,7 +45,7 @@ from apps.abstracts.serializers import ErrorDetailSerializer
 
 
 class ProductViewSet(DRFResponseMixin, ViewSet):
-    """"""
+    """ViewSet for handling products-related endpoints."""
 
     permission_classes = (IsAuthenticated,)
     pagination_class: Type[PageNumberPagination] = PageNumberPagination

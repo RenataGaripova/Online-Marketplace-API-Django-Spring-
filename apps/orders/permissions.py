@@ -17,3 +17,13 @@ class IsOwnerOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return request.user == obj.user
+
+
+class PrivateOrSuperUserAccessOnly(BasePermission):
+    """Permission class that prohibits users to access other's private data."""
+
+    def has_permission(self, request: Request, view: APIView):
+        return (
+            request.user.id == int(view.kwargs.get("pk"))
+            or request.user.is_superuser
+        )

@@ -5,14 +5,13 @@ from rest_framework.routers import DefaultRouter
 # Project modules
 from apps.orders.views.cart_items import CartItemViewSet
 from apps.orders.views.reviews import ReviewViewSet
-from .views_old import (
-    OrderListView,
-    OrderCreateView,
-)
+from apps.orders.views.orders import OrderViewSet
+
 
 v1_router: DefaultRouter = DefaultRouter()
 
 v1_router.register(prefix="reviews", viewset=ReviewViewSet, basename="reviews")
+v1_router.register(prefix="orders", viewset=OrderViewSet, basename="orders")
 
 carts_list: CartItemViewSet = CartItemViewSet.as_view({
     "get": "list_all_carts",
@@ -25,21 +24,10 @@ cart_item_update: CartItemViewSet = CartItemViewSet.as_view({
 })
 
 urlpatterns = [
-    # reviews
+    # router
     path("", include(v1_router.urls)),
     # carts
     path("users/carts/", carts_list, name="cartitem-list"),
     path("users/<int:pk>/cart/", users_cart, name="cartitem-user-cart"),
     path("users/carts/<int:pk>/", cart_item_update, name="cartitem-detail"),
-    # orders
-    path(
-        "users/<int:user_id>/orders/",
-        OrderListView.as_view(),
-        name="order-list",
-    ),
-    path(
-        "users/<int:user_id>/order_create/",
-        OrderCreateView.as_view(),
-        name="order-create",
-    ),
 ]

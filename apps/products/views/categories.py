@@ -1,5 +1,5 @@
 # Python modules
-from typing import Any, Optional, List
+from typing import Any, Optional
 
 # Django modules
 from django.db.models import QuerySet, Manager
@@ -24,16 +24,17 @@ from drf_spectacular.utils import (
 
 
 # Project modules
-from ..serializers import (
+from apps.products.serializers import (
     NameLimitSerializer,
     CategoryBaseSerializer,
     CategoryWithProductsSerializer,
 )
-from ..models import Category
+from apps.products.models import Category
 from apps.abstracts.serializers import ErrorDetailSerializer
+from apps.abstracts.mixins import DRFResponseMixin
 
 
-class CategoryViewSet(ViewSet):
+class CategoryViewSet(DRFResponseMixin, ViewSet):
     """Viewset for handling category-related endpoints."""
 
     pagination_class = PageNumberPagination
@@ -116,18 +117,14 @@ class CategoryViewSet(ViewSet):
         else:
             categories: QuerySet[Category] = categories.all()
 
-        paginator: PageNumberPagination = self.pagination_class()
-        paginator.page_size = limit
-        page: Optional[List[Category]] = paginator.paginate_queryset(
-            categories, request=request
-        )
-
-        serializer: CategoryBaseSerializer = CategoryBaseSerializer(
-            page,
+        return self.get_drf_response(
+            request=request,
+            data=categories,
+            serializer_class=CategoryBaseSerializer,
             many=True,
+            paginator=self.pagination_class(),
+            limit=limit,
         )
-
-        return paginator.get_paginated_response(serializer.data)
 
     def retrieve(
         self,
@@ -154,13 +151,12 @@ class CategoryViewSet(ViewSet):
                 A response containing a info about some category.
         """
 
-        category: Category = Category.objects.filter(id=pk).prefetch_related(
-            "products"
+        category: Category = (
+            Category.objects.filter(id=pk).prefetch_related("products").first()
         )
-        category = category.first()
-        serializer: CategoryWithProductsSerializer = (
-            CategoryWithProductsSerializer(
-                category,
-            )
+        return self.get_drf_response(
+            request=request,
+            data=category,
+            serializer_class=CategoryWithProductsSerializer,
+            many=False,
         )
-        return DRFResponse(data=serializer.data, status=HTTP_200_OK)
