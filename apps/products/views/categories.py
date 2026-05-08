@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 # Django modules
 from django.db.models import QuerySet, Manager
+from django.utils.translation import gettext_lazy as _
 
 # DRF modules
 from rest_framework.viewsets import ViewSet
@@ -32,6 +33,7 @@ from apps.products.serializers import (
 from apps.products.models import Category
 from apps.abstracts.serializers import ErrorDetailSerializer
 from apps.abstracts.mixins import DRFResponseMixin
+from apps.abstracts.decorators import obtain_object_by_pk
 
 
 class CategoryViewSet(DRFResponseMixin, ViewSet):
@@ -127,6 +129,11 @@ class CategoryViewSet(DRFResponseMixin, ViewSet):
             limit=limit,
         )
 
+    @obtain_object_by_pk(
+        queryset=Category.objects,
+        class_name=Category,
+        entity_name=_("Category"),
+    )
     def retrieve(
         self,
         request: DRFRequest,
@@ -152,9 +159,7 @@ class CategoryViewSet(DRFResponseMixin, ViewSet):
                 A response containing a info about some category.
         """
 
-        category: Category = (
-            Category.objects.filter(id=pk).prefetch_related("products").first()
-        )
+        category: Category = kwargs.get("object")
         return self.get_drf_response(
             request=request,
             data=category,

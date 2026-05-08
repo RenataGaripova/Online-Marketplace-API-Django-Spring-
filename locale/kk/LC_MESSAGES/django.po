@@ -8,15 +8,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 16:12+0500\n"
+"POT-Creation-Date: 2026-05-08 18:22+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: kz\n"
+"Language: kk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
 
 #: apps/abstracts/decorators.py:50
 #, python-format
@@ -44,7 +44,7 @@ msgstr "'%(pk)s' id үшін бірнеше %(entity_name)s объектісі �
 msgid "User"
 msgstr "Пайдаланушы"
 
-#: apps/orders/models.py:72 apps/orders/models.py:196
+#: apps/orders/models.py:72 apps/orders/models.py:198
 #: apps/products/models.py:93 apps/products/models.py:200
 #: apps/products/views/products.py:142 apps/products/views/products.py:325
 #: apps/products/views/products.py:414
@@ -53,15 +53,15 @@ msgstr "Өнім"
 
 #: apps/orders/models.py:77
 msgid "Quantity"
-msgstr "Саны"
+msgstr ""
 
 #: apps/orders/models.py:86
 msgid "Cart Item"
-msgstr "Себет элементі"
+msgstr ""
 
 #: apps/orders/models.py:87
 msgid "Cart Items"
-msgstr "Себет элементтері"
+msgstr ""
 
 #: apps/orders/models.py:105
 msgid "Processing"
@@ -85,62 +85,62 @@ msgstr ""
 msgid "Phone number"
 msgstr "Телефон нөмірі"
 
-#: apps/orders/models.py:131 apps/users/models.py:48 apps/users/models.py:110
+#: apps/orders/models.py:133 apps/users/models.py:48 apps/users/models.py:110
 #: apps/users/models.py:111
 msgid "Address"
 msgstr "Мекенжай"
 
-#: apps/orders/models.py:137
+#: apps/orders/models.py:139
 msgid "Order's status"
 msgstr "Тапсырыс мәртебесі"
 
-#: apps/orders/models.py:143 apps/orders/models.py:191
+#: apps/orders/models.py:145 apps/orders/models.py:193
 #: venv/lib/python3.12/site-packages/django/forms/formsets.py:484
 #: venv/lib/python3.12/site-packages/django/forms/formsets.py:491
 msgid "Order"
 msgstr "Тапсырыс"
 
-#: apps/orders/models.py:144
+#: apps/orders/models.py:146
 msgid "Orders"
 msgstr "Тапсырыстар"
 
-#: apps/orders/models.py:200
+#: apps/orders/models.py:202
 msgid "Products name"
-msgstr "Өнім атауы"
+msgstr ""
 
-#: apps/orders/models.py:205 apps/products/models.py:106
+#: apps/orders/models.py:207 apps/products/models.py:106
 #: apps/products/models.py:188
 msgid "Price"
 msgstr "Бағасы"
 
-#: apps/orders/models.py:210
+#: apps/orders/models.py:212
 msgid "Ordered quantity"
-msgstr "Тапсырыс саны"
+msgstr ""
 
-#: apps/orders/models.py:237
+#: apps/orders/models.py:239
 msgid "Related product"
-msgstr "Байланысты өнім"
+msgstr ""
 
-#: apps/orders/models.py:242
+#: apps/orders/models.py:244
 msgid "Author"
-msgstr "Автор"
-
-#: apps/orders/models.py:247
-msgid "Rating"
-msgstr "Рейтинг"
+msgstr ""
 
 #: apps/orders/models.py:249
+msgid "Rating"
+msgstr ""
+
+#: apps/orders/models.py:251
 msgid "Reviews's text"
-msgstr "Пікір мәтіні"
+msgstr ""
 
 #: apps/orders/views/cart_items.py:319 apps/orders/views/cart_items.py:387
 msgid "Cart item"
-msgstr "Себет элементі"
+msgstr ""
 
 #: apps/orders/views/reviews.py:84 apps/orders/views/reviews.py:146
 #: apps/orders/views/reviews.py:210
 msgid "Review"
-msgstr "Пікір"
+msgstr ""
 
 #: apps/products/models.py:37 apps/products/models.py:153
 msgid "Name (English)"
@@ -187,11 +187,11 @@ msgstr "Қоймада бар"
 
 #: apps/products/models.py:112
 msgid "Store-Product"
-msgstr "Дүкен өнімі"
+msgstr ""
 
 #: apps/products/models.py:113
 msgid "Store-Products"
-msgstr "Дүкен өнімдері"
+msgstr ""
 
 #: apps/products/models.py:149
 msgid "Related category"
@@ -228,7 +228,7 @@ msgstr "Электрондық пошта"
 
 #: apps/users/models.py:42
 msgid "Is user a seller?"
-msgstr "Пайдаланушы сатушы ма?"
+msgstr ""
 
 #: apps/users/models.py:54 apps/users/models.py:55
 msgid "Preffered language"
@@ -260,23 +260,23 @@ msgstr "Пошталық индекс"
 
 #: apps/users/models.py:104
 msgid "Is default address?"
-msgstr "Әдепкі мекенжай ма?"
+msgstr ""
 
 #: venv/lib/python3.12/site-packages/django/contrib/messages/apps.py:16
 msgid "Messages"
-msgstr "Хабарламалар"
+msgstr ""
 
 #: venv/lib/python3.12/site-packages/django/contrib/sitemaps/apps.py:8
 msgid "Site Maps"
-msgstr "Сайт карталары"
+msgstr ""
 
 #: venv/lib/python3.12/site-packages/django/contrib/staticfiles/apps.py:9
 msgid "Static Files"
-msgstr "Статикалық файлдар"
+msgstr ""
 
 #: venv/lib/python3.12/site-packages/django/contrib/syndication/apps.py:7
 msgid "Syndication"
-msgstr "Синдикация"
+msgstr ""
 
 #. Translators: String used to replace omitted page numbers in elided page
 #. range generated by paginators, e.g. [1, 2, '…', 5, 6, 7, '…', 9, 10].

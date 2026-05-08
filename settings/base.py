@@ -98,7 +98,7 @@ ENGLISH_LANGUAGE_CODE = "en"
 
 LANGUAGES = [
     ("en", "English"),
-    ("kz", "Kazakh"),
+    ("kk", "Kazakh"),
     ("ru", "Russian"),
 ]
 

@@ -23,7 +23,7 @@ class CustomUser(AbstractUser):
     MAX_ADDRESS_LENGTH: int = 255
     MAX_LANG_LENGTH: int = 3
     MAX_TIMEZONE_LENGTH: int = 120
-    PREFFERED_LANGUAGES = ("en", "ru", "kz")
+    PREFFERED_LANGUAGES = ("en", "ru", "kk")
     TIMEZONES = ((zone, zone) for zone in available_timezones())
 
     email: EmailField = EmailField(

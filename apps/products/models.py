@@ -43,7 +43,7 @@ class Category(AbstractBaseModel):
         blank=True,
         verbose_name=_("Name (Russian)"),
     )
-    name_kz: CharField = CharField(
+    name_kk: CharField = CharField(
         max_length=MAX_NAME_LENGTH,
         unique=True,
         null=True,
@@ -60,7 +60,7 @@ class Category(AbstractBaseModel):
         null=True,
         verbose_name=_("Description (Russian)"),
     )
-    description_kz: TextField = TextField(
+    description_kk: TextField = TextField(
         blank=True,
         null=True,
         verbose_name=_("Description (Kazakh)"),
@@ -159,7 +159,7 @@ class Product(AbstractBaseModel):
         blank=True,
         verbose_name=_("Name (Russian)"),
     )
-    name_kz: CharField = CharField(
+    name_kk: CharField = CharField(
         max_length=MAX_NAME_LENGTH,
         unique=True,
         null=True,
@@ -176,7 +176,7 @@ class Product(AbstractBaseModel):
         null=True,
         verbose_name=_("Description (Russian)"),
     )
-    description_kz: TextField = TextField(
+    description_kk: TextField = TextField(
         blank=True,
         null=True,
         verbose_name=_("Description (Kazakh)"),
@@ -233,7 +233,7 @@ class Store(AbstractBaseModel):
         null=True,
         verbose_name=_("Description (Russian)"),
     )
-    description_kz: TextField = TextField(
+    description_kk: TextField = TextField(
         blank=True,
         null=True,
         verbose_name=_("Description (Kazakh)"),
