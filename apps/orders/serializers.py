@@ -19,7 +19,7 @@ from django.db.models import QuerySet
 from django.db import transaction
 
 # Project modules
-from .models import (
+from apps.orders.models import (
     Order,
     OrderItem,
     CartItem,
@@ -29,6 +29,7 @@ from apps.users.models import (
     CustomUser,
 )
 from apps.products.models import StoreProductRelation
+from apps.abstracts.serializers import TimeZoneSerializerMixin
 
 # ----------------------------------------------
 # REVIEWS
@@ -48,7 +49,7 @@ class ReviewCreate400Serializer(Serializer):
         fields: tuple[str, ...] = ("product", "rate", "text")
 
 
-class ReviewSerializer(ModelSerializer):
+class ReviewSerializer(TimeZoneSerializerMixin, ModelSerializer):
     """Serializer for Review model."""
 
     user: StringRelatedField = StringRelatedField()
@@ -139,7 +140,7 @@ class CartItemUpdateDestroy404Serializer(Serializer):
         fields: tuple[str, ...] = ("pk",)
 
 
-class CartItemBaseSerializer(ModelSerializer):
+class CartItemBaseSerializer(TimeZoneSerializerMixin, ModelSerializer):
     """Serializer for CartItem model."""
 
     total_product_price: SerializerMethodField = SerializerMethodField(
@@ -403,7 +404,7 @@ class OrderItemBaseSerializer(ModelSerializer):
         return round(obj.price * obj.quantity, 2)
 
 
-class OrderBaseSerializer(ModelSerializer):
+class OrderBaseSerializer(TimeZoneSerializerMixin, ModelSerializer):
     """Base serializer for Order model."""
 
     MAX_PRICE_DIGITS: int = 10
@@ -436,6 +437,7 @@ class OrderBaseSerializer(ModelSerializer):
             "deleted_at",
         )
         read_only_fields: tuple[str, ...] = [
+            "id",
             "status",
             "user",
             "created_at",

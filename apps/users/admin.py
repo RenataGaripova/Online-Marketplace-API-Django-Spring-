@@ -22,6 +22,8 @@ class CustomUserAdmin(UserAdmin):
         "is_staff",
         "is_superuser",
         "date_joined",
+        "timezone",
+        "preffered_language",
     )
     search_fields = (
         "email",
@@ -47,6 +49,8 @@ class CustomUserAdmin(UserAdmin):
                     "first_name",
                     "last_name",
                     "password",
+                    "timezone",
+                    "preffered_language",
                 ),
             },
         ),

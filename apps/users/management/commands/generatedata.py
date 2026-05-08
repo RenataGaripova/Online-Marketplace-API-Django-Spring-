@@ -57,8 +57,8 @@ class Command(BaseCommand):
         users_before: int = CustomUser.objects.count()
 
         for i in range(user_count):
-            username: str = f"user{i+1}"
-            email: str = f"user{i+1}@{choice(self.EMAIL_DOMAINS)}"
+            username: str = f"user{i + 1}"
+            email: str = f"user{i + 1}@{choice(self.EMAIL_DOMAINS)}"
             first_name: str = choice(self.SOME_WORDS).capitalize()
             last_name: str = choice(self.SOME_WORDS).capitalize()
             created_users.append(
@@ -97,7 +97,7 @@ class Command(BaseCommand):
             created_categories.append(
                 Category(
                     name=name,
-                    description=f"Category about {name.lower()} products."
+                    description=f"Category about {name.lower()} products.",
                 )
             )
 
@@ -105,9 +105,7 @@ class Command(BaseCommand):
         after: int = Category.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} Category records."
-            )
+            self.style.SUCCESS(f"Created {after - before} Category records.")
         )
 
     def __generate_products(self, product_count: int = 20) -> None:
@@ -133,7 +131,7 @@ class Command(BaseCommand):
                     name=name,
                     description=f"Description for {name}",
                     price=round(uniform(10.0, 500.0), 2),
-                    image=f"https://placehold.co/150x150?text=Product+{i+1}",
+                    image=f"https://placehold.co/150x150?text=Product+{i + 1}",
                 )
             )
 
@@ -141,9 +139,7 @@ class Command(BaseCommand):
         after: int = Product.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} Product records."
-            )
+            self.style.SUCCESS(f"Created {after - before} Product records.")
         )
 
     def __generate_stores(self, count: int = 20) -> None:
@@ -162,10 +158,8 @@ class Command(BaseCommand):
                     owner=choice(owners),
                     name=f"Store № {i}",
                     description=" ".join(
-                        choices(
-                            self.SOME_WORDS,
-                            k=10
-                        )).capitalize(),
+                        choices(self.SOME_WORDS, k=10)
+                    ).capitalize(),
                 )
             )
 
@@ -173,9 +167,7 @@ class Command(BaseCommand):
         after: int = Store.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} Store records."
-            )
+            self.style.SUCCESS(f"Created {after - before} Store records.")
         )
 
     def __generate_stores_products(self, products_per_store: int = 5):
@@ -203,8 +195,7 @@ class Command(BaseCommand):
                 )
 
         StoreProductRelation.objects.bulk_create(
-            store_products_to_add,
-            ignore_conflicts=True
+            store_products_to_add, ignore_conflicts=True
         )
 
         after: int = StoreProductRelation.objects.count()
@@ -215,7 +206,9 @@ class Command(BaseCommand):
             )
         )
 
-    def __generate_cart_items(self,) -> None:
+    def __generate_cart_items(
+        self,
+    ) -> None:
         """
         Generates cart items for testing purposes.
         """
@@ -241,9 +234,7 @@ class Command(BaseCommand):
         after: int = CartItem.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} CartItem records."
-            )
+            self.style.SUCCESS(f"Created {after - before} CartItem records.")
         )
 
     def __generate_orders(self, count: int = 20) -> None:
@@ -261,8 +252,6 @@ class Command(BaseCommand):
                 Order(
                     user=choice(users),
                     phone_number=f"+7701{randint(1000000, 9999999)}",
-                    delivery_address=f"City: {randint(1, 20)},"
-                    f" Street: {randint(20, 40)}",
                     status=choice(["P", "S", "D"]),
                 )
             )
@@ -271,12 +260,12 @@ class Command(BaseCommand):
         after: int = Order.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} Order records."
-            )
+            self.style.SUCCESS(f"Created {after - before} Order records.")
         )
 
-    def __generate_order_items(self,) -> None:
+    def __generate_order_items(
+        self,
+    ) -> None:
         """
         Generates order items for testing purposes.
         """
@@ -304,9 +293,7 @@ class Command(BaseCommand):
         after: int = OrderItem.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} OrderItem records."
-            )
+            self.style.SUCCESS(f"Created {after - before} OrderItem records.")
         )
 
     def __generate_reviews(self, count: int = 20) -> None:
@@ -334,9 +321,7 @@ class Command(BaseCommand):
         after: int = Review.objects.count()
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Created {after - before} Review records."
-            )
+            self.style.SUCCESS(f"Created {after - before} Review records.")
         )
 
     def handle(self, *args: tuple[Any, ...], **kwargs: dict[str, Any]) -> None:

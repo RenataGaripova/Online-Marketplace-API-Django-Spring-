@@ -6,7 +6,7 @@ from django.db.models import QuerySet, Manager
 
 # DRF modules
 from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
@@ -48,7 +48,8 @@ class CategoryViewSet(DRFResponseMixin, ViewSet):
             permission_classes = [
                 AllowAny,
             ]
-        permission_classes = []
+        else:
+            permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
     @extend_schema(

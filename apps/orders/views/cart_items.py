@@ -34,13 +34,14 @@ from rest_framework.decorators import action
 # Django modules
 from django.db.models import QuerySet
 from django.db.models import Count
+from django.utils.translation import gettext_lazy as _
 
 # Project modules
 from apps.users.models import CustomUser
 from apps.abstracts.mixins import DRFResponseMixin
 from apps.abstracts.serializers import ErrorDetailSerializer
 from apps.abstracts.decorators import obtain_object_by_pk
-from apps.orders.permissions import IsOwnerOrReadOnly
+from apps.core.permissions import IsOwnerOrReadOnly
 from apps.orders.serializers import (
     UsernameLimit,
     CartItemBaseSerializer,
@@ -179,7 +180,7 @@ class CartItemViewSet(DRFResponseMixin, ViewSet):
     @obtain_object_by_pk(
         queryset=CustomUser.objects,
         class_name=CustomUser,
-        entity_name="Пользователь",
+        entity_name=_("User"),
     )
     def retrieve(
         self,
@@ -315,7 +316,7 @@ class CartItemViewSet(DRFResponseMixin, ViewSet):
     @obtain_object_by_pk(
         queryset=CartItem.objects.select_related("store_product"),
         class_name=CartItem,
-        entity_name="Товар в корзине",
+        entity_name=_("Cart item"),
     )
     def partial_update(
         self,
@@ -383,7 +384,7 @@ class CartItemViewSet(DRFResponseMixin, ViewSet):
     @obtain_object_by_pk(
         queryset=CartItem.objects,
         class_name=CartItem,
-        entity_name="Товар в корзине",
+        entity_name=_("Cart item"),
     )
     def destroy(
         self,

@@ -14,27 +14,37 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "name",
+        "name_ru",
+        "name_kz",
         "description",
+        "description_ru",
+        "description_kz",
         "created_at",
         "updated_at",
         "deleted_at",
     )
     search_fields = ("name",)
-    list_filter = (
-        "name",
-    )
+    list_filter = ("name",)
     fieldsets = [
         (
             "Category Information",
             {
                 "fields": (
                     "name",
+                    "name_ru",
+                    "name_kz",
                     "description",
+                    "description_ru",
+                    "description_kz",
                 ),
             },
         ),
     ]
-    readonly_fields = ("created_at", "updated_at", "deleted_at",)
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    )
 
 
 @admin.register(Product)
@@ -46,8 +56,12 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "name",
+        "name_ru",
+        "name_kz",
         "category",
-        # "seller",
+        "description",
+        "description_ru",
+        "description_kz",
         "price",
         "created_at",
         "updated_at",
@@ -56,11 +70,9 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = (
         "name",
         "category__name",
-        # "seller__email",
     )
     list_filter = (
         "category",
-        # "seller",
         "created_at",
         "updated_at",
     )
@@ -72,7 +84,11 @@ class ProductAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "name",
+                    "name_ru",
+                    "name_kz",
                     "description",
+                    "description_ru",
+                    "description_kz",
                     "price",
                     "image",
                 ),
@@ -90,12 +106,20 @@ class ProductAdmin(admin.ModelAdmin):
         (
             "Date-Time Information",
             {
-                "fields": ["created_at", "updated_at", "deleted_at",],
+                "fields": [
+                    "created_at",
+                    "updated_at",
+                    "deleted_at",
+                ],
             },
         ),
     ]
 
-    readonly_fields = ("created_at", "updated_at", "deleted_at",)
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    )
 
 
 @admin.register(Store)
@@ -113,7 +137,10 @@ class StoreAdmin(admin.ModelAdmin):
         "deleted_at",
     )
     search_fields = ("owner__email", "name")
-    list_filter = ("created_at", "updated_at",)
+    list_filter = (
+        "created_at",
+        "updated_at",
+    )
     ordering = ("-created_at",)
     fieldsets = [
         (
@@ -125,8 +152,16 @@ class StoreAdmin(admin.ModelAdmin):
         (
             "Date-Time Information",
             {
-                "fields": ["created_at", "updated_at", "deleted_at",],
+                "fields": [
+                    "created_at",
+                    "updated_at",
+                    "deleted_at",
+                ],
             },
         ),
     ]
-    readonly_fields = ("created_at", "updated_at", "deleted_at",)
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    )

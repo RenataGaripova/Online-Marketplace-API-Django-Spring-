@@ -5,6 +5,24 @@ from rest_framework.views import APIView
 from typing import Any
 
 
+class IsAllowedToManageProducts(BasePermission):
+    """Permission class that allows only owners to modify their content."""
+
+    message: str = "Only admins and sellers can manage products."
+
+    def has_object_permission(
+        self, request: Request, view: APIView, obj: Any
+    ) -> bool:
+        """Check if user has permission to access the object."""
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user.is_authenticated and (
+            request.user.is_superuser
+            or request.user.is_staff
+            or request.user.is_seller
+        )
+
+
 class IsOwnerOrReadOnly(BasePermission):
     """Permission class that allows only owners to modify their content."""
 

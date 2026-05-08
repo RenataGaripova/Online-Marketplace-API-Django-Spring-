@@ -3,10 +3,11 @@ from typing import Any, Optional, Type
 
 # Django modules
 from django.db.models import QuerySet
+from django.utils.translation import gettext_lazy as _
 
 # DRF modules
 from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
@@ -38,16 +39,18 @@ from apps.orders.serializers import (
 # Project modules
 from apps.abstracts.mixins import DRFResponseMixin
 from apps.products.serializers import (
-    ProductSerializer,
+    ProductReadSerializer,
+    ProductWriteSerializer,
 )
 from apps.products.models import Product
 from apps.abstracts.serializers import ErrorDetailSerializer
+from apps.core.permissions import IsAllowedToManageProducts
 
 
 class ProductViewSet(DRFResponseMixin, ViewSet):
     """ViewSet for handling products-related endpoints."""
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAllowedToManageProducts)
     pagination_class: Type[PageNumberPagination] = PageNumberPagination
 
     @extend_schema(
@@ -73,7 +76,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
             ),
         ],
         responses={
-            HTTP_200_OK: ProductSerializer(many=True),
+            HTTP_200_OK: ProductReadSerializer(many=True),
             HTTP_429_TOO_MANY_REQUESTS: OpenApiResponse(
                 description="Too many requests",
                 response=ErrorDetailSerializer,
@@ -82,6 +85,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     )
     @action(
         methods=("get",),
+        permission_classes=(AllowAny,),
         detail=False,
         url_path="list",
     )
@@ -104,9 +108,10 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
                 name__icontains=search
             ) | products.filter(description__icontains=search)
 
-        serializer: ProductSerializer = ProductSerializer(
+        serializer: ProductReadSerializer = ProductReadSerializer(
             products,
             many=True,
+            context={"request": request},
         )
         return DRFResponse(
             data=serializer.data,
@@ -118,7 +123,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
         summary="Retrieve a product",
         description="Retrieve a single product by its ID.",
         responses={
-            HTTP_200_OK: ProductSerializer,
+            HTTP_200_OK: ProductReadSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
                 description="Product not found.",
                 response=ErrorDetailSerializer,
@@ -127,8 +132,14 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     )
     @action(
         methods=("get",),
+        permission_classes=(AllowAny,),
         detail=True,
         url_path="retrieve",
+    )
+    @obtain_object_by_pk(
+        queryset=Product.objects,
+        class_name=Product,
+        entity_name=_("Product"),
     )
     def retrieve_product(
         self,
@@ -138,25 +149,22 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
         **kwargs: dict[Any, Any],
     ) -> DRFResponse:
 
-        product = Product.objects.filter(pk=pk).first()
-        if not product:
-            return DRFResponse(
-                {"detail": "Not found"},
-                status=HTTP_404_NOT_FOUND,
-            )
-        serializer: ProductSerializer = ProductSerializer(product)
-        return DRFResponse(
-            data=serializer.data,
-            status=HTTP_200_OK,
+        product = kwargs.get("object")
+        return self.get_drf_response(
+            request=request,
+            data=product,
+            serializer_class=ProductReadSerializer,
+            many=False,
+            serializer_context={"request": request},
         )
 
     @extend_schema(
         tags=["products"],
         summary="Create a product",
         description="Create a new product. Authentication is required.",
-        request=ProductSerializer,
+        request=ProductWriteSerializer,
         responses={
-            201: ProductSerializer,
+            201: ProductWriteSerializer,
             HTTP_405_METHOD_NOT_ALLOWED: OpenApiResponse(
                 description="Access forbidden.",
                 response=ErrorDetailSerializer,
@@ -165,6 +173,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     )
     @action(
         methods=("post",),
+        permission_classes=(IsAllowedToManageProducts,),
         detail=False,
         url_path="create",
     )
@@ -175,7 +184,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
         **kwargs: dict[Any, Any],
     ) -> DRFResponse:
 
-        serializer: ProductSerializer = ProductSerializer(
+        serializer: ProductWriteSerializer = ProductWriteSerializer(
             data=request.data,
             context={"request": request},
         )
@@ -192,9 +201,9 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
         description=(
             "Partially update a product by its ID. Authentication is required."
         ),
-        request=ProductSerializer,
+        request=ProductWriteSerializer,
         responses={
-            HTTP_200_OK: ProductSerializer,
+            HTTP_200_OK: ProductWriteSerializer,
             HTTP_404_NOT_FOUND: OpenApiResponse(
                 description="Product not found.",
                 response=ErrorDetailSerializer,
@@ -203,6 +212,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     )
     @action(
         methods=("patch",),
+        permission_classes=(IsAllowedToManageProducts,),
         detail=True,
         url_path="update",
     )
@@ -220,7 +230,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
                 {"detail": "Not found"},
                 status=HTTP_404_NOT_FOUND,
             )
-        serializer: ProductSerializer = ProductSerializer(
+        serializer: ProductWriteSerializer = ProductWriteSerializer(
             product,
             data=request.data,
             partial=True,
@@ -250,6 +260,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     )
     @action(
         methods=("delete",),
+        permission_classes=(IsAllowedToManageProducts,),
         detail=True,
         url_path="delete",
     )
@@ -304,13 +315,14 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     @action(
         detail=True,
         methods=("GET",),
+        permission_classes=(IsAuthenticated),
         url_name="list_reviews",
         url_path="list-reviews",
     )
     @obtain_object_by_pk(
         queryset=Product.objects,
         class_name=Product,
-        entity_name="Товар",
+        entity_name=_("Product"),
     )
     def list_reviews(
         self,
@@ -392,13 +404,14 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     @action(
         detail=True,
         methods=("POST",),
+        permission_classes=(IsAuthenticated),
         url_name="post_review",
         url_path="post-review",
     )
     @obtain_object_by_pk(
         queryset=Product.objects,
         class_name=Product,
-        entity_name="Товар",
+        entity_name=_("Product"),
     )
     def post_review(
         self,

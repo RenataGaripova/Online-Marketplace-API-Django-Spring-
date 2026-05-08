@@ -10,6 +10,7 @@ from functools import wraps
 
 # Django modules
 from django.db.models import QuerySet, Manager
+from django.utils.translation import gettext as _
 
 # DRF Modules
 from rest_framework.request import Request as DRFRequest
@@ -45,7 +46,10 @@ def obtain_object_by_pk(
             pk: Optional[str] = str(kwargs.get("pk"))
             if not pk.isdigit():
                 return DRFResponse(
-                    data={"id": f"{entity_name} id must be a number."},
+                    data={
+                        "id": _("%(entity_name)s id must be a number.")
+                        % {"entity_name": entity_name}
+                    },
                     status=HTTP_400_BAD_REQUEST,
                 )
             try:
@@ -54,7 +58,12 @@ def obtain_object_by_pk(
             except queryset.model.DoesNotExist:
                 return DRFResponse(
                     data={
-                        "id": [f"{entity_name} with id '{pk}' was not found."]
+                        "id": [
+                            _(
+                                "%(entity_name)s with id '%(pk)s' was not found."
+                            )
+                            % {"entity_name": entity_name, "pk": pk}
+                        ]
                     },
                     status=HTTP_404_NOT_FOUND,
                 )
@@ -62,7 +71,10 @@ def obtain_object_by_pk(
                 return DRFResponse(
                     data={
                         "id": [
-                            f"Multiple {entity_name} objects were returned for '{pk}' id."
+                            _(
+                                "Multiple %(entity_name)s objects were returned for '%(pk)s' id."
+                            )
+                            % {"entity_name": entity_name, "pk": pk}
                         ]
                     },
                     status=HTTP_400_BAD_REQUEST,

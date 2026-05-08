@@ -22,10 +22,12 @@ from django.core.validators import (
     RegexValidator,
 )
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 # Project modules
 from apps.products.models import Product, StoreProductRelation
 from apps.abstracts.models import AbstractBaseModel
+from apps.users.models import Address
 
 
 class CartItemQuerySet(QuerySet):
@@ -62,15 +64,17 @@ class CartItem(AbstractBaseModel):
     user: ForeignKey = ForeignKey(
         to=get_user_model(),
         on_delete=CASCADE,
-        verbose_name="User",
+        verbose_name=_("User"),
     )
     store_product: ForeignKey = ForeignKey(
         to=StoreProductRelation,
         on_delete=PROTECT,
-        verbose_name="Product",
+        verbose_name=_("Product"),
     )
     quantity: PositiveSmallIntegerField = PositiveSmallIntegerField(
-        default=1, validators=[MinValueValidator(1)], verbose_name="Quantity"
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name=_("Quantity"),
     )
 
     objects: Manager = CartItemManager()
@@ -79,12 +83,14 @@ class CartItem(AbstractBaseModel):
     class Meta:
         """Meta class."""
 
+        verbose_name = _("Cart Item")
+        verbose_name_plural = _("Cart Items")
         ordering: tuple[str, str] = ("-created_at",)
         default_related_name: str = "cart_items"
 
     def __str__(self) -> str:
         """Magic method."""
-        return f"{self.user.username}'s cart"
+        return f"Cart Item #{self.id}"
 
 
 class Order(AbstractBaseModel):
@@ -96,42 +102,48 @@ class Order(AbstractBaseModel):
     MAX_STATUS_LENGTH: int = 20
     MAX_ADDRESS_LENGTH: int = 1024
     STATUS_CHOICES: list[tuple[str, str]] = [
-        ("P", "Processing"),
-        ("S", "Shipped"),
-        ("D", "Delivered"),
+        ("P", _("Processing")),
+        ("S", _("Shipped")),
+        ("D", _("Delivered")),
     ]
 
     user: ForeignKey = ForeignKey(
         to=get_user_model(),
-        on_delete=SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="User",
+        on_delete=PROTECT,
+        verbose_name=_("User"),
     )
     phone_number: CharField = CharField(
         max_length=MAX_PHONE_NUMBER_LENGTH,
         validators=[
             RegexValidator(
                 regex=r"^\+?1?\d{9,15}$",
-                message="Phone number must be entered in the format: "
-                "'+999999999'. Up to 15 digits allowed.",
+                message=_(
+                    "Phone number must be entered in the format: "
+                    "'+999999999'. Up to 15 digits allowed."
+                ),
             )
         ],
-        verbose_name="Phone number",
+        verbose_name=_("Phone number"),
     )
-    delivery_address: CharField = CharField(
-        max_length=MAX_ADDRESS_LENGTH, verbose_name="Delivery address"
+    delivery_address: ForeignKey = ForeignKey(
+        to=Address,
+        on_delete=PROTECT,
+        blank=True,
+        null=True,
+        verbose_name=_("Address"),
     )
     status: CharField = CharField(
         max_length=MAX_STATUS_LENGTH,
         choices=STATUS_CHOICES,
         default="P",
-        verbose_name="Order's status",
+        verbose_name=_("Order's status"),
     )
 
     class Meta:
         """Meta class."""
 
+        verbose_name = _("Order")
+        verbose_name_plural = _("Orders")
         ordering: tuple[str, str] = ("-created_at",)
         default_related_name: str = "orders"
 
@@ -178,26 +190,26 @@ class OrderItem(AbstractBaseModel):
     order: ForeignKey = ForeignKey(
         to=Order,
         on_delete=CASCADE,
-        verbose_name="Order",
+        verbose_name=_("Order"),
     )
     store_product: ForeignKey = ForeignKey(
         to=StoreProductRelation,
         on_delete=PROTECT,
-        verbose_name="Product",
+        verbose_name=_("Product"),
     )
     name: CharField = CharField(
         max_length=MAX_ORDER_ITEM_NAME_LENGTH,
-        verbose_name="Products name",
+        verbose_name=_("Products name"),
     )
     price: DecimalField = DecimalField(
         max_digits=MAX_PRICE_DIGITS,
         decimal_places=MAX_DECIMAL_PLACES,
-        verbose_name="Price",
+        verbose_name=_("Price"),
     )
     quantity: PositiveIntegerField = PositiveIntegerField(
         default=1,
         validators=[MinValueValidator(1)],
-        verbose_name="Ordered quantity",
+        verbose_name=_("Ordered quantity"),
     )
 
     class Meta:
@@ -224,19 +236,19 @@ class Review(AbstractBaseModel):
         on_delete=SET_NULL,
         null=True,
         blank=True,
-        verbose_name="Related product",
+        verbose_name=_("Related product"),
     )
     user: ForeignKey = ForeignKey(
         to=get_user_model(),
         on_delete=CASCADE,
-        verbose_name="Author",
+        verbose_name=_("Author"),
     )
     rate: IntegerField = IntegerField(
         validators=(MinValueValidator(MIN_RATE), MaxValueValidator(MAX_RATE)),
         default=0,
-        verbose_name="Rating",
+        verbose_name=_("Rating"),
     )
-    text: TextField = TextField(verbose_name="Reviews's text")
+    text: TextField = TextField(verbose_name=_("Reviews's text"))
 
     class Meta:
         """Meta class."""

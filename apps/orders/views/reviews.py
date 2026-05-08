@@ -28,12 +28,13 @@ from rest_framework.status import (
 
 # Django modules
 from django.db.models import QuerySet
+from django.utils.translation import gettext_lazy as _
 
 # Project modules
 from apps.abstracts.decorators import obtain_object_by_pk
 from apps.abstracts.mixins import DRFResponseMixin
 from apps.abstracts.serializers import ErrorDetailSerializer
-from apps.orders.permissions import IsOwnerOrReadOnly
+from apps.core.permissions import IsOwnerOrReadOnly
 from apps.orders.models import Review
 from apps.orders.serializers import (
     ReviewCreate400Serializer,
@@ -80,7 +81,7 @@ class ReviewViewSet(DRFResponseMixin, ViewSet):
     @obtain_object_by_pk(
         queryset=queryset,
         class_name=Review,
-        entity_name="Отзыв",
+        entity_name=_("Review"),
     )
     def retrieve(
         self,
@@ -142,7 +143,7 @@ class ReviewViewSet(DRFResponseMixin, ViewSet):
     @obtain_object_by_pk(
         queryset=queryset,
         class_name=Review,
-        entity_name="Отзыв",
+        entity_name=_("Review"),
     )
     def partial_update(
         self,
@@ -206,7 +207,7 @@ class ReviewViewSet(DRFResponseMixin, ViewSet):
     @obtain_object_by_pk(
         queryset=queryset,
         class_name=Review,
-        entity_name="Отзыв",
+        entity_name=_("Review"),
     )
     def destroy(
         self,

@@ -1,7 +1,10 @@
 # Python modules
 from typing import Any, Optional, Type
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from datetime import datetime
 
 # Django modules
+from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 
 # DRF modules
@@ -14,14 +17,21 @@ from rest_framework.serializers import (
 )
 
 # Project modules
-from .models import CustomUser, Address
+from apps.users.models import CustomUser, Address
+from apps.abstracts.serializers import TimeZoneSerializerMixin
 
 
-class AddressSerializer(ModelSerializer):
+class AddressSerializer(TimeZoneSerializerMixin, ModelSerializer):
     class Meta:
         model: Type[Address] = Address
         fields: str = "__all__"
-        read_only_fields: tuple[str, ...] = ("user",)
+        read_only_fields: tuple[str, ...] = (
+            "id",
+            "user",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        )
 
     def create(self, validated_data: dict[str, Any]) -> Any:
         validated_data["user"] = self.context["request"].user
@@ -37,7 +47,6 @@ class BaseUserSerializer(serializers.ModelSerializer):
             "username",
             "phone",
             "is_seller",
-            "address",
         )
 
 
@@ -77,6 +86,17 @@ class UserRegistrationSerializer(ModelSerializer):
         validated_data.pop("password2")
         user = CustomUser.objects.create_user(**validated_data)
         return user
+
+    def get_date_joined(self, obj: CustomUser) -> datetime:
+        """Returns date_joined in client's timezone."""
+        request = self.context.get("request")
+        tz: ZoneInfo = ZoneInfo("UTC")
+        if request and request.user.is_authenticated:
+            try:
+                tz: ZoneInfo = ZoneInfo(request.user.timezone)
+            except ZoneInfoNotFoundError:
+                tz: ZoneInfo = ZoneInfo("UTC")
+        return timezone.localtime(obj.date_joined, tz)
 
 
 class UserLoginSerializer(Serializer):
