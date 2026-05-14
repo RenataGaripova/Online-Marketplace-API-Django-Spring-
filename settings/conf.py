@@ -1,8 +1,6 @@
 # Python modules
 import os
 from datetime import timedelta
-
-# Project modules
 from decouple import config
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -124,3 +122,11 @@ LOGGING = {
         },
     },
 }
+# ------------------------------------------------
+# Redis Configuration
+#
+REDIS_HOST = config("REDIS_HOST", cast=str, default="localhost")
+REDIS_PORT = config("REDIS_PORT", cast=int, default=6379)
+REDIS_CELERY_DB = config("REDIS_CELERY_DB", cast=int, default=0)
+REDIS_DB = config("REDIS_DB", cast=int, default=1)
+REDIS_SSE_DB = config("REDIS_SSE_DB", cast=int, default=2)

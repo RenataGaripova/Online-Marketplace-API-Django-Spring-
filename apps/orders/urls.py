@@ -6,7 +6,7 @@ from rest_framework.routers import DefaultRouter
 from apps.orders.views.cart_items import CartItemViewSet
 from apps.orders.views.reviews import ReviewViewSet
 from apps.orders.views.orders import OrderViewSet
-
+from apps.orders.views.sse import order_status_stream
 
 v1_router: DefaultRouter = DefaultRouter()
 
@@ -30,4 +30,6 @@ urlpatterns = [
     path("users/carts/", carts_list, name="cartitem-list"),
     path("users/<int:pk>/cart/", users_cart, name="cartitem-user-cart"),
     path("users/carts/<int:pk>/", cart_item_update, name="cartitem-detail"),
+    # orders
+    path("orders/stream/", order_status_stream, name="order-status-stream"),
 ]
