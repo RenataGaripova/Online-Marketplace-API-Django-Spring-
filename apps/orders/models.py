@@ -168,10 +168,6 @@ class Order(AbstractBaseModel):
                     "Phone number must have between 9 and 15 digits"
                 )
 
-        # Delivery address validation
-        if not self.delivery_address or not self.delivery_address.strip():
-            raise ValidationError("Delivery address cannot be empty")
-
     def save(self, *args, **kwargs) -> None:
         """Override save to call full_clean."""
         self.full_clean()

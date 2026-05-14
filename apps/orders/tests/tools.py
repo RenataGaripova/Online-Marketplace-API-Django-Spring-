@@ -9,7 +9,7 @@ from typing import Optional, List, Any, Dict
 from datetime import datetime, timezone
 from apps.orders.models import Order, OrderItem, CartItem, Review
 from apps.products.models import Product, StoreProductRelation, Store
-from apps.users.models import CustomUser
+from apps.users.models import CustomUser, Address
 
 
 @dataclass
@@ -56,7 +56,7 @@ class OrderBuilder:
     """Builder pattern for creating test Order instances."""
     user: Optional[CustomUser] = None
     phone_number: str = "+1234567890"
-    delivery_address: str = "123 Test Street, Test City"
+    delivery_address: Optional[Address] = None
     status: str = "P"
 
     def with_user(self, user: CustomUser) -> 'OrderBuilder':
@@ -69,8 +69,10 @@ class OrderBuilder:
         self.phone_number = phone_number
         return self
 
-    def with_delivery_address(self, delivery_address: str) -> 'OrderBuilder':
-        """Set the delivery address."""
+    def with_delivery_address(
+        self, delivery_address: Optional[Address]
+    ) -> 'OrderBuilder':
+        """Set the delivery address (Address FK or None)."""
         self.delivery_address = delivery_address
         return self
 
@@ -220,7 +222,7 @@ class OrderTestDataFactory:
         self,
         user: CustomUser,
         phone_number: str = "+1234567890",
-        delivery_address: str = "123 Test Street",
+        delivery_address: Optional[Address] = None,
         status: str = "P"
     ) -> Order:
         """Create an order."""
@@ -272,7 +274,7 @@ class OrderTestDataFactory:
         user: CustomUser,
         store_products: List[StoreProductRelation],
         phone_number: str = "+1234567890",
-        delivery_address: str = "123 Test Street"
+        delivery_address: Optional[Address] = None,
     ) -> Dict[str, Any]:
         """Create a complete order scenario with cart items, order, and order items."""
         if not store_products:
@@ -439,11 +441,18 @@ class OrderTestDataBuilder:
 
             # Create an order for half of the users
             if users.index(user) % 2 == 0:
+                # Create an Address for the user to use as delivery_address FK
+                addr = Address.objects.create(
+                    user=user,
+                    city=f"City{users.index(user)}",
+                    street=f"{users.index(user)} Test Street",
+                    zip_code=f"0000{users.index(user)}",
+                )
                 order_scenario = self.factory.create_complete_order_scenario(
                     user=user,
                     store_products=user_store_products[:1],  # Order first product
                     phone_number=f"+123456789{users.index(user)}",
-                    delivery_address=f"{users.index(user)} Test Street, Test City"
+                    delivery_address=addr,
                 )
                 scenario_data['order_scenarios'].append(order_scenario)
 
@@ -485,11 +494,20 @@ class OrderValidator:
         return True, None
 
     @staticmethod
-    def validate_delivery_address(address: str) -> tuple[bool, Optional[str]]:
-        """Validate delivery address."""
-        if not address or not address.strip():
-            return False, "Delivery address cannot be empty"
+    def validate_delivery_address(address) -> tuple[bool, Optional[str]]:
+        """Validate delivery address (free-text snapshot validator).
 
+        Note: in the current data model `Order.delivery_address` is a FK to
+        `Address`. This helper is kept for input-string sanity checks used by
+        fixture validation tests.
+        """
+        if address is None:
+            return False, "Delivery address cannot be empty"
+        if not isinstance(address, str):
+            # Treat non-string values (e.g. Address instances) as valid pointers.
+            return True, None
+        if not address.strip():
+            return False, "Delivery address cannot be empty"
         if len(address) > 1024:
             return False, "Delivery address cannot exceed 1024 characters"
 

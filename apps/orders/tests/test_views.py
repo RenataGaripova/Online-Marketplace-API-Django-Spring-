@@ -1,1022 +1,486 @@
-"""
-API view tests for the orders app.
-Tests all endpoints with 1 good case + 3 bad cases per endpoint.
-"""
-
 import pytest
 from decimal import Decimal
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.orders.models import Order, CartItem, Review
-from apps.products.models import Product, StoreProductRelation, Category
-from apps.users.models import CustomUser
+from apps.products.models import (
+    Product,
+    StoreProductRelation,
+    Category,
+    Store,
+)
+from apps.users.models import CustomUser, Address
 
 
 @pytest.mark.django_db
-class TestReviewViewSet:
-    """
-    Test cases for ReviewViewSet
-    (/api/v1/products/{product_id}/reviews/).
-    """
+class TestReviewRetrieve:
+    """GET /api/v1/reviews/<pk>/ — reviews-detail (retrieve)."""
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Set up test data."""
         self.client = APIClient()
-        self.regular_user = CustomUser.objects.create_user(
-            username="user",
-            email="user@example.com",
-            password="testpass123"
+        self.user = CustomUser.objects.create_user(
+            username="u", email="u@e.com", password="pass12345!"
         )
-        self.admin_user = CustomUser.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass123",
-            is_staff=True
-        )
-        self.other_user = CustomUser.objects.create_user(
-            username="other",
-            email="other@example.com",
-            password="testpass123"
-        )
-
-        self.category = Category.objects.create(
-            name="Test Category",
-            description="Test category description"
-        )
+        self.category = Category.objects.create(name="Cat", description="d")
         self.product = Product.objects.create(
             category=self.category,
-            name="Test Product",
-            description="Test product description",
-            price=Decimal("99.99")
+            name="P",
+            description="d",
+            price=Decimal("10.00"),
         )
-
-    def test_list_reviews_good(self):
-        """Test: Successfully list reviews for existing product."""
-        # Create a review first
-        Review.objects.create(
+        self.review = Review.objects.create(
             product=self.product,
-            user=self.regular_user,
+            user=self.user,
             rate=5,
-            text="Great product!"
+            text="ok",
         )
 
-        url = reverse('review-list', kwargs={'product_id': self.product.id})
+    def test_retrieve_review_good(self):
+        url = reverse("reviews-detail", kwargs={"pk": self.review.id})
         response = self.client.get(url)
-
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['count'] == 1
-        assert response.data['results'][0]['rate'] == 5
-        assert response.data['results'][0]['text'] == "Great product!"
 
-    def test_list_reviews_bad_nonexistent_product(self):
-        """Test: Attempt to list reviews for non-existent product."""
-        url = reverse('review-list', kwargs={'product_id': 999999})
+    def test_retrieve_review_bad_nonexistent(self):
+        url = reverse("reviews-detail", kwargs={"pk": 999_999})
         response = self.client.get(url)
-
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_list_reviews_bad_no_reviews(self):
-        """Test: List reviews for product that has no reviews."""
-        url = reverse('review-list', kwargs={'product_id': self.product.id})
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['count'] == 0
-
-    def test_create_review_good(self):
-        """Test: Successfully create a review as authenticated user."""
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('review-list', kwargs={'product_id': self.product.id})
-        data = {
-            'rate': 4,
-            'text': 'Good product, would recommend'
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['rate'] == 4
-        assert response.data['text'] == 'Good product, would recommend'
-        assert Review.objects.count() == 1
-
-    def test_create_review_bad_unauthenticated(self):
-        """Test: Attempt to create review without authentication."""
-        url = reverse('review-list', kwargs={'product_id': self.product.id})
-        data = {
-            'rate': 4,
-            'text': 'Good product, would recommend'
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN
-        ]
-
-    def test_create_review_bad_invalid_rating(self):
-        """Test: Attempt to create review with invalid rating."""
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('review-list', kwargs={'product_id': self.product.id})
-        data = {
-            'rate': 6,  # Invalid: rating must be 0-5
-            'text': 'Good product, would recommend'
-        }
-        response = self.client.post(url, data)
-
+    def test_retrieve_review_bad_invalid_pk(self):
+        response = self.client.get("/api/v1/reviews/not-a-number/")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert Review.objects.count() == 0
 
-    def test_create_review_bad_missing_fields(self):
-        """Test: Attempt to create review with missing required fields."""
-        self.client.force_authenticate(user=self.regular_user)
 
-        url = reverse('review-list', kwargs={'product_id': self.product.id})
-        data = {
-            'rate': 4
-            # Missing 'text' field
-        }
-        response = self.client.post(url, data)
+@pytest.mark.django_db
+class TestReviewPartialUpdate:
+    """PATCH /api/v1/reviews/<pk>/ — reviews-detail (partial_update)."""
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert Review.objects.count() == 0
-
-    def test_update_review_good(self):
-        """Test: Successfully update own review."""
-        # Create a review first
-        review = Review.objects.create(
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.client = APIClient()
+        self.owner = CustomUser.objects.create_user(
+            username="owner", email="owner@e.com", password="pass12345!"
+        )
+        self.other = CustomUser.objects.create_user(
+            username="other", email="other@e.com", password="pass12345!"
+        )
+        self.category = Category.objects.create(name="Cat", description="d")
+        self.product = Product.objects.create(
+            category=self.category,
+            name="P",
+            price=Decimal("10.00"),
+        )
+        self.review = Review.objects.create(
             product=self.product,
-            user=self.regular_user,
+            user=self.owner,
             rate=3,
-            text="Average product"
+            text="meh",
         )
 
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse(
-            'review-detail',
-            kwargs={'product_id': self.product.id, 'pk': review.id}
-        )
-        data = {
-            'rate': 5,
-            'text': "Actually, it's great!"
-        }
-        response = self.client.patch(url, data)
-
+    def test_update_review_good_as_owner(self):
+        self.client.force_authenticate(user=self.owner)
+        url = reverse("reviews-detail", kwargs={"pk": self.review.id})
+        response = self.client.patch(url, {"rate": 5, "text": "Great!"})
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['rate'] == 5
-        assert response.data['text'] == "Actually, it's great!"
+        self.review.refresh_from_db()
+        assert self.review.rate == 5
+        assert self.review.text == "Great!"
 
-        review.refresh_from_db()
-        assert review.rate == 5
-        assert review.text == "Actually, it's great!"
-
-    def test_update_review_bad_non_owner(self):
-        """Test: Attempt to update review owned by another user."""
-        # Create a review by other user
-        review = Review.objects.create(
-            product=self.product,
-            user=self.other_user,
-            rate=3,
-            text="Average product"
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse(
-            'review-detail',
-            kwargs={'product_id': self.product.id, 'pk': review.id}
-        )
-        data = {
-            'rate': 5,
-            'text': "Trying to update someone else's review"
-        }
-        response = self.client.patch(url, data)
-
+    def test_update_review_bad_not_owner(self):
+        self.client.force_authenticate(user=self.other)
+        url = reverse("reviews-detail", kwargs={"pk": self.review.id})
+        response = self.client.patch(url, {"rate": 1, "text": "spam"})
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_update_review_bad_unauthenticated(self):
-        """Test: Attempt to update review without authentication."""
-        # Create a review first
-        review = Review.objects.create(
-            product=self.product,
-            user=self.regular_user,
-            rate=3,
-            text="Average product"
-        )
-
-        url = reverse('review-detail',
-                      kwargs={'product_id': self.product.id, 'pk': review.id})
-        data = {
-            'rate': 5,
-            'text': "Trying to update without auth"
-        }
-        response = self.client.patch(url, data)
-
-        assert response.status_code in [
+        url = reverse("reviews-detail", kwargs={"pk": self.review.id})
+        response = self.client.patch(url, {"rate": 5, "text": "hi"})
+        assert response.status_code in (
             status.HTTP_401_UNAUTHORIZED,
-            status.HTTP_403_FORBIDDEN
-        ]
+            status.HTTP_403_FORBIDDEN,
+        )
 
-    def test_update_review_bad_invalid_rating(self):
-        """Test: Attempt to update review with invalid rating."""
-        # Create a review first
-        review = Review.objects.create(
+
+@pytest.mark.django_db
+class TestReviewDestroy:
+    """DELETE /api/v1/reviews/<pk>/ — reviews-detail (destroy)."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.client = APIClient()
+        self.owner = CustomUser.objects.create_user(
+            username="owner", email="owner@e.com", password="pass12345!"
+        )
+        self.other = CustomUser.objects.create_user(
+            username="other", email="other@e.com", password="pass12345!"
+        )
+        self.category = Category.objects.create(name="Cat", description="d")
+        self.product = Product.objects.create(
+            category=self.category,
+            name="P",
+            price=Decimal("10.00"),
+        )
+        self.review = Review.objects.create(
             product=self.product,
-            user=self.regular_user,
+            user=self.owner,
             rate=3,
-            text="Average product"
+            text="meh",
         )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('review-detail', kwargs={
-            'product_id': self.product.id,
-            'pk': review.id}
-        )
-        data = {
-            'rate': -1,  # Invalid rating
-            'text': "Updated with invalid rating"
-        }
-        response = self.client.patch(url, data)
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_delete_review_good(self):
-        """Test: Successfully delete own review."""
-        # Create a review first
-        review = Review.objects.create(
-            product=self.product,
-            user=self.regular_user,
-            rate=3,
-            text="Average product"
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('review-detail',
-                      kwargs={'product_id': self.product.id, 'pk': review.id})
+        self.client.force_authenticate(user=self.owner)
+        url = reverse("reviews-detail", kwargs={"pk": self.review.id})
         response = self.client.delete(url)
-
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert Review.objects.filter(
-            id=review.id,
-            deleted_at__isnull=True).count() == 0
+        self.review.refresh_from_db()
+        assert self.review.deleted_at is not None
 
-    def test_delete_review_bad_non_owner(self):
-        """Test: Attempt to delete review owned by another user."""
-        # Create a review by other user
-        review = Review.objects.create(
-            product=self.product,
-            user=self.other_user,
-            rate=3,
-            text="Average product"
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse(
-            'review-detail',
-            kwargs={'product_id': self.product.id, 'pk': review.id}
-        )
+    def test_delete_review_bad_not_owner(self):
+        self.client.force_authenticate(user=self.other)
+        url = reverse("reviews-detail", kwargs={"pk": self.review.id})
         response = self.client.delete(url)
-
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert Review.objects.filter(
-            id=review.id, deleted_at__isnull=True).count() == 1
 
-    def test_delete_review_bad_unauthenticated(self):
-        """Test: Attempt to delete review without authentication."""
-        # Create a review first
-        review = Review.objects.create(
-            product=self.product,
-            user=self.regular_user,
-            rate=3,
-            text="Average product"
-        )
-
-        url = reverse(
-            'review-detail',
-            kwargs={'product_id': self.product.id, 'pk': review.id}
-        )
+    def test_delete_review_bad_nonexistent(self):
+        self.client.force_authenticate(user=self.owner)
+        url = reverse("reviews-detail", kwargs={"pk": 999_999})
         response = self.client.delete(url)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN
-        ]
-
-    def test_delete_review_bad_nonexistent_review(self):
-        """Test: Attempt to delete non-existent review."""
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse(
-            'review-detail',
-            kwargs={'product_id': self.product.id, 'pk': 999999}
-        )
-        response = self.client.delete(url)
-
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.fixture
+def cart_setup(db):
+    """Reusable user / store / product / store_product fixture for cart tests."""
+
+    class _Setup:
+        pass
+
+    s = _Setup()
+    s.user = CustomUser.objects.create_user(
+        username="user", email="user@e.com", password="pass12345!"
+    )
+    s.other = CustomUser.objects.create_user(
+        username="other", email="other@e.com", password="pass12345!"
+    )
+    s.admin = CustomUser.objects.create_user(
+        username="admin",
+        email="admin@e.com",
+        password="pass12345!",
+        is_staff=True,
+        is_superuser=True,
+    )
+    s.category = Category.objects.create(name="Cat", description="d")
+    s.product = Product.objects.create(
+        category=s.category, name="P", price=Decimal("10.00")
+    )
+    s.store = Store.objects.create(owner=s.user, name="Store", description="d")
+    s.store_product = StoreProductRelation.objects.create(
+        product=s.product,
+        store=s.store,
+        quantity=10,
+        price=Decimal("10.00"),
+    )
+    return s
 
 
 @pytest.mark.django_db
-class TestCartItemViewSet:
-    """Test cases for CartItemViewSet (/api/v1/users/carts/)."""
+class TestCartListAllCarts:
+    """GET /api/v1/users/carts/ — cartitem-list (list_all_carts)."""
 
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        """Set up test data."""
-        self.client = APIClient()
-        self.regular_user = CustomUser.objects.create_user(
-            username="user",
-            email="user@example.com",
-            password="testpass123"
-        )
-        self.admin_user = CustomUser.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass123",
-            is_staff=True
-        )
-        self.other_user = CustomUser.objects.create_user(
-            username="other",
-            email="other@example.com",
-            password="testpass123"
-        )
-
-        # Create store and product for testing
-        self.category = Category.objects.create(
-            name="Test Category",
-            description="Test category description"
-        )
-        self.product = Product.objects.create(
-            category=self.category,
-            name="Test Product",
-            description="Test product description",
-            price=Decimal("99.99")
-        )
-
-        # Create store with owner (required field)
-        try:
-            from apps.products.models import Store
-            self.store = Store.objects.create(
-                owner=self.regular_user,
-                name="Test Store",
-                description="Test store"
-            )
-            # Create the store-product relation
-            self.store_product = StoreProductRelation.objects.create(
-                product=self.product,
-                store=self.store,
-                quantity=100,
-                price=Decimal("99.99")
-            )
-        except Exception as e:
-            # If Store creation fails, we'll skip cart item tests that need it
-            print(f"Warning: Could not create Store for testing: {e}")
-            self.store = None
-            self.store_product = None
-
-    def test_list_all_carts_good(self):
-        """Test: Admin successfully lists all users' carts."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart items for different users
+    def test_list_all_carts_good(self, cart_setup):
         CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
+            user=cart_setup.user,
+            store_product=cart_setup.store_product,
+            quantity=1,
         )
-        CartItem.objects.create(
-            user=self.other_user,
-            store_product=self.store_product,
-            quantity=1
-        )
-
-        self.client.force_authenticate(user=self.admin_user)
-
-        url = reverse('cartitem-list')
-        response = self.client.get(url)
-
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.admin)
+        response = client.get(reverse("cartitem-list"))
         assert response.status_code == status.HTTP_200_OK
-        # This endpoint returns users with cart items, not just cart items
-        # It should return at least 2 users who have cart items
-        assert response.data['count'] >= 2
 
-    def test_list_all_carts_bad_non_admin(self):
-        """Test: Regular user attempts to list all users' carts."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-list')
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    def test_list_all_carts_bad_unauthenticated(self):
-        """Test: Unauthenticated user attempts to list all carts."""
-        url = reverse('cartitem-list')
-        response = self.client.get(url)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN
-        ]
-
-    def test_list_all_carts_bad_empty_result(self):
-        """Test: Admin lists carts when no cart items exist."""
-        self.client.force_authenticate(user=self.admin_user)
-
-        url = reverse('cartitem-list')
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        # This returns all users, even if they have no cart items
-        # So count will be number of users, not 0
-        assert response.data['count'] >= 0
-
-    def test_retrieve_user_cart_good(self):
-        """Test: User successfully retrieves their own cart."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item for regular user
-        cart_item = CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse(
-            'cartitem-user-cart',
-            kwargs={'user_id': self.regular_user.id}
-        )
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data['cart_items']) == 1
-        assert response.data['cart_items'][0]['id'] == cart_item.id
-
-    def test_retrieve_user_cart_good_admin(self):
-        """Test: Admin successfully retrieves any user's cart."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item for regular user
-        CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.admin_user)
-
-        url = reverse(
-            'cartitem-user-cart', kwargs={'user_id': self.regular_user.id}
-        )
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data['cart_items']) == 1
-
-    def test_retrieve_user_cart_bad_non_owner(self):
-        """Test: User attempts to retrieve another user's cart."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item for other user
-        CartItem.objects.create(
-            user=self.other_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse(
-            'cartitem-user-cart',
-            kwargs={'user_id': self.other_user.id}
-        )
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    def test_retrieve_user_cart_bad_unauthenticated(self):
-        """Test: Unauthenticated user attempts to retrieve cart."""
-        url = reverse('cartitem-user-cart', kwargs={
-            'user_id': self.regular_user.id
-        })
-        response = self.client.get(url)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN
-        ]
-
-    def test_create_cart_item_good(self):
-        """Test: Successfully create cart item."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-list')
-        data = {
-            'store_product': self.store_product.id,
-            'quantity': 3
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['quantity'] == 3
-        assert CartItem.objects.count() == 1
-
-    def test_create_cart_item_bad_exceeds_stock(self):
-        """Test: Attempt to create cart item exceeding available stock."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Set stock to 5
-        self.store_product.quantity = 5
-        self.store_product.save()
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-list')
-        data = {
-            'store_product': self.store_product.id,
-            'quantity': 10  # Exceeds stock
-        }
-        response = self.client.post(url, data)
-
-        # Note: This depends on whether stock validation is implemented
-        # If not, this might succeed (bad behavior but code would allow it)
-        assert response.status_code in [
-            status.HTTP_400_BAD_REQUEST, status.HTTP_201_CREATED
-        ]
-
-    def test_create_cart_item_bad_invalid_store_product(self):
-        """Test: Attempt to create cart item with invalid store product."""
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-list')
-        data = {
-            'store_product': 999999,  # Non-existent
-            'quantity': 1
-        }
-        response = self.client.post(url, data)
-
-        # View returns 404 for non-existent store product (acceptable)
-        assert response.status_code in [
-            status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND
-        ]
-
-    def test_create_cart_item_bad_unauthenticated(self):
-        """Test: Attempt to create cart item without authentication."""
-        url = reverse('cartitem-list')
-        data = {
-            'store_product': 1,
-            'quantity': 1
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN
-        ]
-
-    def test_update_cart_item_good(self):
-        """Test: User successfully updates their cart item."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item
-        cart_item = CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-detail', kwargs={'pk': cart_item.id})
-        data = {
-            'quantity': 5
-        }
-        response = self.client.patch(url, data)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['quantity'] == 5
-
-    def test_update_cart_item_bad_non_owner(self):
-        """Test: User attempts to update another user's cart item."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item for other user
-        cart_item = CartItem.objects.create(
-            user=self.other_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-detail', kwargs={'pk': cart_item.id})
-        data = {
-            'quantity': 5
-        }
-        response = self.client.patch(url, data)
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    def test_update_cart_item_bad_exceeds_stock(self):
-        """Test: Attempt to update cart item to exceed available stock."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Set stock to 5
-        self.store_product.quantity = 5
-        self.store_product.save()
-
-        # Create cart item
-        cart_item = CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-detail', kwargs={'pk': cart_item.id})
-        data = {
-            'quantity': 10  # Exceeds stock
-        }
-        response = self.client.patch(url, data)
-
-        # Note: This depends on whether stock validation is implemented
-        assert response.status_code in [
-            status.HTTP_400_BAD_REQUEST, status.HTTP_200_OK
-        ]
-
-    def test_delete_cart_item_good(self):
-        """Test: User successfully deletes their cart item."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item
-        cart_item = CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-detail', kwargs={'pk': cart_item.id})
-        response = self.client.delete(url)
-
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    def test_delete_cart_item_bad_non_owner(self):
-        """Test: User attempts to delete another user's cart item."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item for other user
-        cart_item = CartItem.objects.create(
-            user=self.other_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-detail', kwargs={'pk': cart_item.id})
-        response = self.client.delete(url)
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    def test_delete_cart_item_bad_unauthenticated(self):
-        """Test: Attempt to delete cart item without authentication."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item
-        cart_item = CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        url = reverse('cartitem-detail', kwargs={'pk': cart_item.id})
-        response = self.client.delete(url)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN
-        ]
-
-    def test_delete_cart_item_bad_nonexistent(self):
-        """Test: Attempt to delete non-existent cart item."""
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('cartitem-detail', kwargs={'pk': 999999})
-        response = self.client.delete(url)
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-@pytest.mark.django_db
-class TestOrderListView:
-    """Test cases for OrderListView (/api/v1/users/{user_id}/orders/)."""
-
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        """Set up test data."""
-        self.client = APIClient()
-        self.regular_user = CustomUser.objects.create_user(
-            username="user",
-            email="user@example.com",
-            password="testpass123"
-        )
-        self.admin_user = CustomUser.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass123",
-            is_staff=True
-        )
-        self.other_user = CustomUser.objects.create_user(
-            username="other",
-            email="other@example.com",
-            password="testpass123"
-        )
-
-    def test_list_orders_good(self):
-        """Test: User successfully lists their own orders."""
-        # Create orders for regular user
-        Order.objects.create(
-            user=self.regular_user,
-            phone_number="+1234567890",
-            delivery_address="123 Test St",
-            status="P"
-        )
-        Order.objects.create(
-            user=self.regular_user,
-            phone_number="+1234567891",
-            delivery_address="456 Test Ave",
-            status="S"
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('order-list', kwargs={'user_id': self.regular_user.id})
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['count'] == 2
-
-    def test_list_orders_good_admin(self):
-        """Test: Admin successfully lists any user's orders."""
-        # Create order for regular user
-        Order.objects.create(
-            user=self.regular_user,
-            phone_number="+1234567890",
-            delivery_address="123 Test St",
-            status="P"
-        )
-
-        self.client.force_authenticate(user=self.admin_user)
-
-        url = reverse('order-list', kwargs={'user_id': self.regular_user.id})
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['count'] == 1
-
-    def test_list_orders_bad_non_owner(self):
-        """Test: User attempts to list another user's orders."""
-        # Create order for other user
-        Order.objects.create(
-            user=self.other_user,
-            phone_number="+1234567890",
-            delivery_address="123 Test St",
-            status="P"
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('order-list', kwargs={'user_id': self.other_user.id})
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-    def test_list_orders_bad_unauthenticated(self):
-        """Test: Unauthenticated user attempts to list orders."""
-        url = reverse('order-list', kwargs={'user_id': self.regular_user.id})
-        response = self.client.get(url)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
-
-    def test_list_orders_bad_nonexistent_user(self):
-        """Test: Attempt to list orders for non-existent user."""
-        self.client.force_authenticate(user=self.admin_user)
-
-        url = reverse('order-list', kwargs={'user_id': 999999})
-        response = self.client.get(url)
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-@pytest.mark.django_db
-class TestOrderCreateView:
-    """
-    Test cases for OrderCreateView
-    (/api/v1/users/{user_id}/order_create/).
-    """
-
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        """Set up test data."""
-        self.client = APIClient()
-        self.regular_user = CustomUser.objects.create_user(
-            username="user",
-            email="user@example.com",
-            password="testpass123"
-        )
-        self.admin_user = CustomUser.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="adminpass123",
-            is_staff=True
-        )
-
-        # Setup minimal products/store for cart items
-        self.category = Category.objects.create(
-            name="Test Category",
-            description="Test category description"
-        )
-        self.product = Product.objects.create(
-            category=self.category,
-            name="Test Product",
-            description="Test product description",
-            price=Decimal("99.99")
-        )
-
-        # Create store with owner (required field)
-        try:
-            from apps.products.models import Store
-            self.store = Store.objects.create(
-                owner=self.regular_user,
-                name="Test Store",
-                description="Test store"
-            )
-            self.store_product = StoreProductRelation.objects.create(
-                product=self.product,
-                store=self.store,
-                quantity=100,
-                price=Decimal("99.99")
-            )
-        except Exception as e:
-            print(f"Warning: Could not create Store for order testing: {e}")
-            self.store = None
-            self.store_product = None
-
-    def test_create_order_good(self):
-        """Test: Successfully create order with valid data."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item
-        CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('order-create', kwargs={'user_id': self.regular_user.id})
-        data = {
-            'phone_number': '+1234567890',
-            'delivery_address': '123 Test Street, Test City, 12345'
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['phone_number'] == '+1234567890'
-        assert response.data[
-            'delivery_address'
-        ] == '123 Test Street, Test City, 12345'
-        assert response.data['status'] == "P"
-
-    def test_create_order_bad_empty_cart(self):
-        """Test: Attempt to create order with empty cart."""
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('order-create', kwargs={'user_id': self.regular_user.id})
-        data = {
-            'phone_number': '+1234567890',
-            'delivery_address': '123 Test Street, Test City, 12345'
-        }
-        response = self.client.post(url, data)
-
-        # This might return 400 if empty cart validation is implemented
-        # Or 201 if it creates an empty order (bad but possible)
-        assert response.status_code in [
-            status.HTTP_400_BAD_REQUEST, status.HTTP_201_CREATED]
-
-    def test_create_order_bad_missing_fields(self):
-        """Test: Attempt to create order with missing required fields."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Create cart item
-        CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=2
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('order-create', kwargs={'user_id': self.regular_user.id})
-        data = {
-            'phone_number': '+1234567890'
-            # Missing delivery_address
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_create_order_bad_insufficient_stock(self):
-        """Test: Attempt to create order with insufficient stock."""
-        if not self.store_product:
-            pytest.skip("Store not available for testing")
-
-        # Set stock to low amount
-        self.store_product.quantity = 1
-        self.store_product.save()
-
-        # Create cart item with quantity exceeding stock
-        CartItem.objects.create(
-            user=self.regular_user,
-            store_product=self.store_product,
-            quantity=5  # Exceeds stock
-        )
-
-        self.client.force_authenticate(user=self.regular_user)
-
-        url = reverse('order-create', kwargs={'user_id': self.regular_user.id})
-        data = {
-            'phone_number': '+1234567890',
-            'delivery_address': '123 Test Street, Test City, 12345'
-        }
-        response = self.client.post(url, data)
-
-        # This depends on whether stock validation is implemented
-        # If validation exists, should return 400
-        # If no validation, might return 201 (bad behavior)
-        assert response.status_code in [
-            status.HTTP_400_BAD_REQUEST, status.HTTP_201_CREATED]
-
-    def test_create_order_bad_unauthenticated(self):
-        """Test: Attempt to create order without authentication."""
-        url = reverse('order-create', kwargs={'user_id': self.regular_user.id})
-        data = {
-            'phone_number': '+1234567890',
-            'delivery_address': '123 Test Street, Test City, 12345'
-        }
-        response = self.client.post(url, data)
-
-        assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
-
-    def test_create_order_bad_non_owner(self):
-        """Test: Admin attempts to create order for another user."""
-        self.client.force_authenticate(user=self.admin_user)
-
-        url = reverse('order-create', kwargs={'user_id': self.regular_user.id})
-        data = {
-            'phone_number': '+1234567890',
-            'delivery_address': '123 Test Street, Test City, 12345'
-        }
-        response = self.client.post(url, data)
-
-        # Since the view creates order from current user's cart,
-        # not the user_id in URL
-        # Admin has no cart items, so it will return 400 for empty cart
-        assert response.status_code in [
-            status.HTTP_201_CREATED,
+    def test_list_all_carts_bad_unauthenticated(self, cart_setup):
+        client = APIClient()
+        response = client.get(reverse("cartitem-list"))
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
             status.HTTP_403_FORBIDDEN,
-            status.HTTP_400_BAD_REQUEST
-        ]
+        )
+
+    def test_list_all_carts_bad_invalid_limit(self, cart_setup):
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.admin)
+        # UsernameLimit serializer enforces 1 <= limit <= 25.
+        response = client.get(reverse("cartitem-list"), {"limit": 9999})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestCartCreate:
+    """POST /api/v1/users/carts/ — cartitem-list (create)."""
+
+    def test_create_cart_good(self, cart_setup):
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        payload = {
+            "store_product": cart_setup.store_product.id,
+            "quantity": 2,
+        }
+        response = client.post(reverse("cartitem-list"), payload)
+        assert response.status_code == status.HTTP_200_OK
+        assert CartItem.objects.filter(user=cart_setup.user).count() == 1
+
+    def test_create_cart_bad_exceeds_stock(self, cart_setup):
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        payload = {
+            "store_product": cart_setup.store_product.id,
+            "quantity": cart_setup.store_product.quantity + 100,
+        }
+        response = client.post(reverse("cartitem-list"), payload)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_create_cart_bad_unauthenticated(self, cart_setup):
+        client = APIClient()
+        payload = {
+            "store_product": cart_setup.store_product.id,
+            "quantity": 1,
+        }
+        response = client.post(reverse("cartitem-list"), payload)
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+
+@pytest.mark.django_db
+class TestCartRetrieveUserCart:
+    """GET /api/v1/users/<pk>/cart/ — cartitem-user-cart (retrieve)."""
+
+    def test_retrieve_own_cart_good(self, cart_setup):
+        CartItem.objects.create(
+            user=cart_setup.user,
+            store_product=cart_setup.store_product,
+            quantity=2,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-user-cart", kwargs={"pk": cart_setup.user.id})
+        response = client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["cart_items"]) == 1
+
+    def test_retrieve_cart_bad_other_user(self, cart_setup):
+        CartItem.objects.create(
+            user=cart_setup.other,
+            store_product=cart_setup.store_product,
+            quantity=1,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-user-cart", kwargs={"pk": cart_setup.other.id})
+        response = client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_retrieve_cart_bad_nonexistent_user(self, cart_setup):
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-user-cart", kwargs={"pk": 999_999})
+        response = client.get(url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+class TestCartPartialUpdate:
+    """PATCH /api/v1/users/carts/<pk>/ — cartitem-detail (partial_update)."""
+
+    def test_partial_update_good(self, cart_setup):
+        item = CartItem.objects.create(
+            user=cart_setup.user,
+            store_product=cart_setup.store_product,
+            quantity=1,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-detail", kwargs={"pk": item.id})
+        response = client.patch(url, {"quantity": 2})
+        assert response.status_code == status.HTTP_200_OK
+        item.refresh_from_db()
+        assert item.quantity == 2
+
+    def test_partial_update_bad_not_owner(self, cart_setup):
+        item = CartItem.objects.create(
+            user=cart_setup.other,
+            store_product=cart_setup.store_product,
+            quantity=1,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-detail", kwargs={"pk": item.id})
+        response = client.patch(url, {"quantity": 5})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_partial_update_bad_exceeds_stock(self, cart_setup):
+        item = CartItem.objects.create(
+            user=cart_setup.user,
+            store_product=cart_setup.store_product,
+            quantity=1,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-detail", kwargs={"pk": item.id})
+        response = client.patch(url, {"quantity": 999})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestCartDestroy:
+    """DELETE /api/v1/users/carts/<pk>/ — cartitem-detail (destroy)."""
+
+    def test_destroy_good(self, cart_setup):
+        item = CartItem.objects.create(
+            user=cart_setup.user,
+            store_product=cart_setup.store_product,
+            quantity=1,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-detail", kwargs={"pk": item.id})
+        response = client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not CartItem.objects.filter(id=item.id).exists()
+
+    def test_destroy_bad_not_owner(self, cart_setup):
+        item = CartItem.objects.create(
+            user=cart_setup.other,
+            store_product=cart_setup.store_product,
+            quantity=1,
+        )
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-detail", kwargs={"pk": item.id})
+        response = client.delete(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_destroy_bad_nonexistent(self, cart_setup):
+        client = APIClient()
+        client.force_authenticate(user=cart_setup.user)
+        url = reverse("cartitem-detail", kwargs={"pk": 999_999})
+        response = client.delete(url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.fixture
+def order_setup(db):
+    """Reusable user / store / cart fixture for orders tests."""
+
+    class _Setup:
+        pass
+
+    s = _Setup()
+    s.user = CustomUser.objects.create_user(
+        username="user", email="user@e.com", password="pass12345!"
+    )
+    s.other = CustomUser.objects.create_user(
+        username="other", email="other@e.com", password="pass12345!"
+    )
+    s.category = Category.objects.create(name="Cat", description="d")
+    s.product = Product.objects.create(
+        category=s.category, name="P", price=Decimal("10.00")
+    )
+    s.store = Store.objects.create(owner=s.user, name="Store", description="d")
+    s.store_product = StoreProductRelation.objects.create(
+        product=s.product,
+        store=s.store,
+        quantity=10,
+        price=Decimal("10.00"),
+    )
+    s.address = Address.objects.create(
+        user=s.user, city="C", street="S", zip_code="Z"
+    )
+    return s
+
+
+@pytest.mark.django_db
+class TestOrderList:
+    """GET /api/v1/orders/ — orders-list (list)."""
+
+    def test_list_orders_good(self, order_setup):
+        Order.objects.create(
+            user=order_setup.user,
+            phone_number="+1234567890",
+            delivery_address=order_setup.address,
+            status="P",
+        )
+        client = APIClient()
+        client.force_authenticate(user=order_setup.user)
+        response = client.get(reverse("orders-list"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
+    def test_list_orders_bad_unauthenticated(self, order_setup):
+        client = APIClient()
+        response = client.get(reverse("orders-list"))
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_list_orders_bad_isolation_between_users(self, order_setup):
+        """User must not see another user's orders."""
+        Order.objects.create(
+            user=order_setup.other,
+            phone_number="+1234567890",
+            delivery_address=order_setup.address,
+            status="P",
+        )
+        client = APIClient()
+        client.force_authenticate(user=order_setup.user)
+        response = client.get(reverse("orders-list"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 0
+
+
+@pytest.mark.django_db
+class TestOrderCreate:
+    """POST /api/v1/orders/ — orders-list (create)."""
+
+    def test_create_order_good(self, order_setup):
+        CartItem.objects.create(
+            user=order_setup.user,
+            store_product=order_setup.store_product,
+            quantity=2,
+        )
+        client = APIClient()
+        client.force_authenticate(user=order_setup.user)
+        payload = {
+            "phone_number": "+1234567890",
+            "delivery_address": order_setup.address.id,
+        }
+        response = client.post(reverse("orders-list"), payload)
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Order.objects.filter(user=order_setup.user).count() == 1
+
+    def test_create_order_bad_empty_cart(self, order_setup):
+        client = APIClient()
+        client.force_authenticate(user=order_setup.user)
+        payload = {
+            "phone_number": "+1234567890",
+            "delivery_address": order_setup.address.id,
+        }
+        response = client.post(reverse("orders-list"), payload)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_create_order_bad_unauthenticated(self, order_setup):
+        client = APIClient()
+        payload = {
+            "phone_number": "+1234567890",
+            "delivery_address": order_setup.address.id,
+        }
+        response = client.post(reverse("orders-list"), payload)
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )

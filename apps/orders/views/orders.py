@@ -194,8 +194,10 @@ class OrderViewSet(DRFResponseMixin, ViewSet):
                 )
                 request_serializer.is_valid(raise_exception=True)
 
-                phone_number: str = request_serializer.data.get("phone_number")
-                delivery_address: str = request_serializer.data.get(
+                phone_number: str = request_serializer.validated_data.get(
+                    "phone_number"
+                )
+                delivery_address = request_serializer.validated_data.get(
                     "delivery_address"
                 )
                 status: str = "P"

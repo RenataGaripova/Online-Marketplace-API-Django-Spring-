@@ -315,7 +315,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     @action(
         detail=True,
         methods=("GET",),
-        permission_classes=(IsAuthenticated),
+        permission_classes=(IsAuthenticated,),
         url_name="list_reviews",
         url_path="list-reviews",
     )
@@ -404,7 +404,7 @@ class ProductViewSet(DRFResponseMixin, ViewSet):
     @action(
         detail=True,
         methods=("POST",),
-        permission_classes=(IsAuthenticated),
+        permission_classes=(IsAuthenticated,),
         url_name="post_review",
         url_path="post-review",
     )

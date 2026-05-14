@@ -105,7 +105,7 @@ class ReviewViewSet(DRFResponseMixin, ViewSet):
                 A response containing review's details.
         """
         review: Review = kwargs.get("object")
-        self.get_drf_response(
+        return self.get_drf_response(
             request=request,
             data=review,
             serializer_class=ReviewSerializer,

@@ -355,7 +355,7 @@ class AddressViewSet(ViewSet):
 
     @action(
         methods=("delete",),
-        detail=False,
+        detail=True,
         url_path="delete",
     )
     def delete_address(

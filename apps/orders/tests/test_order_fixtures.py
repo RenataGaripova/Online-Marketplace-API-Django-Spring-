@@ -17,7 +17,7 @@ from apps.orders.tests.tools import (
     OrderValidator,
     StockValidator
 )
-from apps.users.models import CustomUser
+from apps.users.models import CustomUser, Address
 
 
 @pytest.mark.django_db
@@ -94,34 +94,44 @@ class TestCartItemFixtureUsage:
 class TestOrderFixtureUsage:
     """Examples of using order fixtures."""
 
-    def test_using_sample_order_fixture(self, sample_order: Order, regular_user: CustomUser):
+    def test_using_sample_order_fixture(
+        self,
+        sample_order: Order,
+        regular_user: CustomUser,
+        sample_address: Address,
+    ):
         """Example: Using the basic sample_order fixture."""
         assert sample_order.user == regular_user
         assert sample_order.phone_number == "+1234567890"
-        assert sample_order.delivery_address == "123 Test Street"
+        assert sample_order.delivery_address == sample_address
         assert sample_order.status == "P"
 
-    def test_using_order_builder_fixture(self, order_builder: OrderBuilder, regular_user: CustomUser):
+    def test_using_order_builder_fixture(
+        self,
+        order_builder: OrderBuilder,
+        regular_user: CustomUser,
+        sample_address: Address,
+    ):
         """Example: Using the order_builder fixture to create custom orders."""
         # Create orders with different statuses
         processing_order = (order_builder
                            .with_user(regular_user)
                            .with_phone_number("+1234567890")
-                           .with_delivery_address("123 Processing St")
+                           .with_delivery_address(sample_address)
                            .with_status("P")
                            .build())
 
         shipped_order = (order_builder
                         .with_user(regular_user)
                         .with_phone_number("+1234567891")
-                        .with_delivery_address("456 Shipped Ave")
+                        .with_delivery_address(sample_address)
                         .with_status("S")
                         .build())
 
         delivered_order = (order_builder
                           .with_user(regular_user)
                           .with_phone_number("+1234567892")
-                          .with_delivery_address("789 Delivered Blvd")
+                          .with_delivery_address(sample_address)
                           .with_status("D")
                           .build())
 
@@ -343,17 +353,23 @@ class TestOrderTestDataFactoryUsage:
         assert cart_item.quantity == 3
         assert cart_item in order_test_data_factory.cart_items
 
-    def test_factory_order_creation(self, order_test_data_factory: OrderTestDataFactory, regular_user: CustomUser):
+    def test_factory_order_creation(
+        self,
+        order_test_data_factory: OrderTestDataFactory,
+        regular_user: CustomUser,
+        sample_address: Address,
+    ):
         """Example: Using factory to create individual orders."""
         order = order_test_data_factory.create_order(
             user=regular_user,
             phone_number="+1234567890",
-            delivery_address="123 Test Street",
+            delivery_address=sample_address,
             status="S"
         )
 
         assert order.user == regular_user
         assert order.phone_number == "+1234567890"
+        assert order.delivery_address == sample_address
         assert order.status == "S"
         assert order in order_test_data_factory.orders
 
@@ -400,14 +416,15 @@ class TestOrderTestDataFactoryUsage:
         self,
         order_test_data_factory: OrderTestDataFactory,
         regular_user: CustomUser,
-        store_product_relation: 'StoreProductRelation'
+        store_product_relation: 'StoreProductRelation',
+        sample_address: Address,
     ):
         """Example: Using factory to create complete order scenario."""
         scenario = order_test_data_factory.create_complete_order_scenario(
             user=regular_user,
             store_products=[store_product_relation],
             phone_number="+1234567890",
-            delivery_address="123 Test Street"
+            delivery_address=sample_address,
         )
 
         assert 'order' in scenario
@@ -546,7 +563,11 @@ class TestComplexFixtureCombinations:
             is_valid, error = order_validator.validate_phone_number(order.phone_number)
             assert is_valid is True
 
-            is_valid, error = order_validator.validate_delivery_address(order.delivery_address)
+            # order.delivery_address is a FK to Address — the validator
+            # treats non-string values as valid pointers.
+            is_valid, error = order_validator.validate_delivery_address(
+                order.delivery_address
+            )
             assert is_valid is True
 
             # Calculate and verify order total
@@ -600,7 +621,8 @@ class TestComplexFixtureCombinations:
         self,
         user_cart_scenario: dict,
         order_test_data_factory: OrderTestDataFactory,
-        regular_user: CustomUser
+        regular_user: CustomUser,
+        sample_address: Address,
     ):
         """Example: Creating order from cart scenario."""
         cart_items = user_cart_scenario['cart_items']
@@ -615,7 +637,7 @@ class TestComplexFixtureCombinations:
             order = order_test_data_factory.create_order(
                 user=regular_user,
                 phone_number="+1234567890",
-                delivery_address="123 Test Street, Test City, 12345"
+                delivery_address=sample_address,
             )
 
             # Create order items from cart
