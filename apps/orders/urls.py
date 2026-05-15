@@ -31,5 +31,9 @@ urlpatterns = [
     path("users/<int:pk>/cart/", users_cart, name="cartitem-user-cart"),
     path("users/carts/<int:pk>/", cart_item_update, name="cartitem-detail"),
     # orders
-    path("orders/stream/", order_status_stream, name="order-status-stream"),
+    path(
+        "orders/<int:order_id>/stream/",
+        order_status_stream,
+        name="order-status-stream",
+    ),
 ]

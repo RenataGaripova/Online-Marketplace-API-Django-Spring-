@@ -50,6 +50,8 @@ async def stream(order_id: int):
             if msg is None:
                 yield ": keep-alive\n\n"
                 continue
+            if msg.get("type") != "message":
+                continue
             data = msg.get("data")
             if data:
                 yield f"data: {data}\n\n"
