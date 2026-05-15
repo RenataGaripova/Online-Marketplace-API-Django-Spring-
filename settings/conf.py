@@ -2,6 +2,7 @@
 import os
 from datetime import timedelta
 from decouple import config
+from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -12,10 +13,8 @@ ENV_POSSIBLE_OPTIONS = (
     "local",
     "prod",
 )
-ENV_ID = config("PROJECT_ENV_ID")
-SECRET_KEY = (
-    "django-insecure--!sazwabf2m!-q#8ui0rlql_@^cii54s9cuu6@hhzli(-#yk_@"
-)
+ENV_ID = config("PROJECT_ENV_ID", "locel")
+SECRET_KEY = config("SECRET_KEY", get_random_secret_key())
 # ----------------------------------------------
 # DRF Spectacular
 #
