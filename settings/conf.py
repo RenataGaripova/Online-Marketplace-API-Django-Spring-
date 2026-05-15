@@ -1,9 +1,8 @@
 # Python modules
 import os
 from datetime import timedelta
-
-# Project modules
 from decouple import config
+from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -14,10 +13,8 @@ ENV_POSSIBLE_OPTIONS = (
     "local",
     "prod",
 )
-ENV_ID = config("PROJECT_ENV_ID")
-SECRET_KEY = (
-    "django-insecure--!sazwabf2m!-q#8ui0rlql_@^cii54s9cuu6@hhzli(-#yk_@"
-)
+ENV_ID = config("PROJECT_ENV_ID", "locel")
+SECRET_KEY = config("SECRET_KEY", get_random_secret_key())
 # ----------------------------------------------
 # DRF Spectacular
 #
@@ -124,3 +121,11 @@ LOGGING = {
         },
     },
 }
+# ------------------------------------------------
+# Redis Configuration
+#
+REDIS_HOST = config("REDIS_HOST", cast=str, default="localhost")
+REDIS_PORT = config("REDIS_PORT", cast=int, default=6379)
+REDIS_CELERY_DB = config("REDIS_CELERY_DB", cast=int, default=0)
+REDIS_DB = config("REDIS_DB", cast=int, default=1)
+REDIS_SSE_DB = config("REDIS_SSE_DB", cast=int, default=2)
