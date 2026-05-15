@@ -1,5 +1,8 @@
 asgiref==3.10.0
 attrs==25.4.0
+celery==5.4.0
+channels==4.3.2
+channels_redis==4.3.0
 Django==5.2.8
 django-filter==25.2
 django-unfold==0.67.0
@@ -10,9 +13,11 @@ inflection==0.5.1
 iniconfig==2.3.0
 jsonschema==4.25.1
 jsonschema-specifications==2025.9.1
+msgpack==1.1.2
 packaging==25.0
 pillow==11.3.0
 pluggy==1.6.0
+psycopg2-binary==2.9.9
 Pygments==2.19.2
 PyJWT==2.10.1
 pytest==9.0.2
@@ -20,6 +25,7 @@ pytest-django==4.11.1
 python-decouple==3.8
 pytz==2025.1
 PyYAML==6.0.3
+redis==7.4.0
 referencing==0.37.0
 rest-framework-simplejwt==0.0.2
 rpds-py==0.30.0

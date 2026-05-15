@@ -24,6 +24,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
 
 # Django modules
+from django.core.cache import cache
 from django.db import DatabaseError
 
 # Project modules
@@ -33,6 +34,11 @@ from apps.users.serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
     AddressSerializer,
+)
+from apps.users.tasks import (
+    OTP_CACHE_KEY,
+    send_otp_email,
+    send_welcome_email,
 )
 from apps.abstracts.serializers import (
     RefreshSerializer,
@@ -44,6 +50,16 @@ logger = logging.getLogger(__name__)
 
 
 class CustomUserViewSet(ViewSet):
+    throttle_scope_map = {
+        "register": "register",
+        "request_otp": "otp",
+        "verify_otp": "otp",
+    }
+
+    def get_throttles(self):
+        self.throttle_scope = self.throttle_scope_map.get(self.action)
+        return super().get_throttles()
+
     @extend_schema(
         summary="Registrate a new user.",
         tags=["auths"],
@@ -103,6 +119,8 @@ class CustomUserViewSet(ViewSet):
             )
             serializer.is_valid(raise_exception=True)
             user: CustomUser = serializer.save()
+
+            send_welcome_email.delay(user.id)
 
             # Generate JWT tokens
             refresh_token: RefreshToken = RefreshToken.for_user(user)
@@ -271,6 +289,61 @@ class CustomUserViewSet(ViewSet):
                 data={"detail": f"Invalid refresh token. Error message: {e}"},
                 status=HTTP_400_BAD_REQUEST,
             )
+
+    @extend_schema(
+        summary="Request a one-time code by email.",
+        tags=["auths"],
+    )
+    @action(methods=("post",), detail=False, url_path="otp/request")
+    def request_otp(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+        """Queue a Celery task that generates an OTP and emails it."""
+        email: str = (request.data.get("email") or "").strip().lower()
+        if not email:
+            return DRFResponse(
+                data={"detail": "Email is required."},
+                status=HTTP_400_BAD_REQUEST,
+            )
+        send_otp_email.delay(email)
+        return DRFResponse(
+            data={"detail": "OTP code has been sent."},
+            status=HTTP_200_OK,
+        )
+
+    @extend_schema(
+        summary="Verify a one-time code stored in Redis.",
+        tags=["auths"],
+    )
+    @action(methods=("post",), detail=False, url_path="otp/verify")
+    def verify_otp(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[Any, Any],
+    ) -> DRFResponse:
+        """Compare a submitted OTP against the value cached in Redis."""
+        email: str = (request.data.get("email") or "").strip().lower()
+        code: str = (request.data.get("code") or "").strip()
+        if not email or not code:
+            return DRFResponse(
+                data={"detail": "Email and code are required."},
+                status=HTTP_400_BAD_REQUEST,
+            )
+        cached = cache.get(OTP_CACHE_KEY.format(email=email))
+        if cached is None or cached != code:
+            return DRFResponse(
+                data={"detail": "Invalid or expired code."},
+                status=HTTP_400_BAD_REQUEST,
+            )
+        cache.delete(OTP_CACHE_KEY.format(email=email))
+        return DRFResponse(
+            data={"detail": "OTP verified."},
+            status=HTTP_200_OK,
+        )
 
 
 class AddressViewSet(ViewSet):

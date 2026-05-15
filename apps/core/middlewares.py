@@ -2,6 +2,7 @@
 from typing import Callable, Any, Optional
 
 # Django modules
+from django.core.cache import cache
 from django.core.handlers.wsgi import WSGIRequest
 from django.utils import translation
 
@@ -78,8 +79,16 @@ class CustomLocaleMiddleware:
                 if header_lang
                 else ENGLISH_LANGUAGE_CODE
             )
+
+        cache_key: str = f"user_lang:{user_id}"
+        cached_lang: Optional[str] = cache.get(cache_key)
+        if cached_lang is not None:
+            return cached_lang
+
         user: CustomUser = CustomUser.objects.filter(id=user_id).first()
         preffered: Optional[str] = user.preffered_language if user else None
-        return (
+        lang: str = (
             self._normalize(preffered) if preffered else ENGLISH_LANGUAGE_CODE
         )
+        cache.set(cache_key, lang, timeout=60 * 10)
+        return lang
