@@ -35,6 +35,13 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.ScopedRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "register": "10/min",
+        "otp": "3/min",
+    },
 }
 # ----------------------------------------------
 # JWT Authorization
@@ -129,3 +136,37 @@ REDIS_PORT = config("REDIS_PORT", cast=int, default=6379)
 REDIS_CELERY_DB = config("REDIS_CELERY_DB", cast=int, default=0)
 REDIS_DB = config("REDIS_DB", cast=int, default=1)
 REDIS_SSE_DB = config("REDIS_SSE_DB", cast=int, default=2)
+
+# ------------------------------------------------
+# Cache (Redis)
+#
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
+    }
+}
+
+# ------------------------------------------------
+# Celery
+#
+CELERY_BROKER_URL = (
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_DB}"
+)
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TIMEZONE = "UTC"
+
+# ------------------------------------------------
+# Email (console backend is fine for a student project)
+#
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL",
+    default="noreply@marketplace.local",
+)
